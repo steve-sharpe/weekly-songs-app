@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const DEFAULT_MAX_RESULTS = 12;
+const DEFAULT_CHANNEL_ID = "UCZRZtepB5V06Ya5VAC66XpA";
+
 type VideoItem = {
   id: { videoId: string };
   snippet: {
@@ -33,52 +36,134 @@ function getThumbnailUrl(block: string) {
   return match?.[1] ?? "";
 }
 
-export async function GET() {
-  try {
-    const channelId = process.env.HULK_YOUTUBE_CHANNEL_ID ?? "UCZRZtepB5V06Ya5VAC66XpA";
-    const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+function toPositiveInt(value: string | null, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
 
-    const response = await fetch(feedUrl, {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+async function fetchByYoutubeDataApi(
+  channelId: string,
+  maxResults: number,
+  pageToken: string,
+  apiKey: string,
+) {
+  const searchParams = new URLSearchParams({
+    key: apiKey,
+    channelId,
+    part: "snippet,id",
+    order: "date",
+    maxResults: String(maxResults),
+    type: "video",
+  });
+
+  if (pageToken) {
+    searchParams.set("pageToken", pageToken);
+  }
+
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
+    {
       cache: "no-store",
       headers: {
         "User-Agent": "weekly-songs-app/1.0",
       },
-    });
+    },
+  );
 
-    if (!response.ok) {
-      throw new Error(`YouTube feed request failed with status ${response.status}`);
-    }
+  const data = (await response.json()) as {
+    items?: VideoItem[];
+    nextPageToken?: string;
+    error?: { message?: string };
+  };
 
-    const xml = await response.text();
-    const entryMatches = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/gi)];
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `YouTube API failed with status ${response.status}`);
+  }
 
-    const items: VideoItem[] = entryMatches
-      .map((entryMatch) => {
-        const entry = entryMatch[1];
-        const videoId = getTagValue(entry, "yt:videoId");
-        const title = getTagValue(entry, "title");
-        const thumbnailUrl = getThumbnailUrl(entry);
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    nextPageToken: data.nextPageToken ?? null,
+  };
+}
 
-        if (!videoId || !title || !thumbnailUrl) {
-          return null;
-        }
+async function fetchByYoutubeRss(
+  channelId: string,
+  maxResults: number,
+  pageToken: string,
+) {
+  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+  const response = await fetch(feedUrl, {
+    cache: "no-store",
+    headers: {
+      "User-Agent": "weekly-songs-app/1.0",
+    },
+  });
 
-        return {
-          id: { videoId },
-          snippet: {
-            title,
-            thumbnails: {
-              high: { url: thumbnailUrl },
-              medium: { url: thumbnailUrl },
-            },
+  if (!response.ok) {
+    throw new Error(`YouTube feed request failed with status ${response.status}`);
+  }
+
+  const xml = await response.text();
+  const entryMatches = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/gi)];
+
+  const allItems: VideoItem[] = entryMatches
+    .map((entryMatch) => {
+      const entry = entryMatch[1];
+      const videoId = getTagValue(entry, "yt:videoId");
+      const title = getTagValue(entry, "title");
+      const thumbnailUrl = getThumbnailUrl(entry);
+
+      if (!videoId || !title || !thumbnailUrl) {
+        return null;
+      }
+
+      return {
+        id: { videoId },
+        snippet: {
+          title,
+          thumbnails: {
+            high: { url: thumbnailUrl },
+            medium: { url: thumbnailUrl },
           },
-        } satisfies VideoItem;
-      })
-      .filter((item): item is VideoItem => item !== null);
+        },
+      } satisfies VideoItem;
+    })
+    .filter((item): item is VideoItem => item !== null);
+
+  const offset = toPositiveInt(pageToken || null, 0);
+  const items = allItems.slice(offset, offset + maxResults);
+  const nextOffset = offset + items.length;
+  const nextPageToken = nextOffset < allItems.length ? String(nextOffset) : null;
+
+  return {
+    items,
+    nextPageToken,
+  };
+}
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const channelId = process.env.HULK_YOUTUBE_CHANNEL_ID ?? DEFAULT_CHANNEL_ID;
+    const maxResults = toPositiveInt(url.searchParams.get("maxResults"), DEFAULT_MAX_RESULTS);
+    const pageToken = url.searchParams.get("pageToken") ?? "";
+    const apiKey = process.env.YOUTUBE_API_KEY ?? process.env.GOOGLE_YOUTUBE_API_KEY ?? "";
+
+    const result = apiKey
+      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey)
+      : await fetchByYoutubeRss(channelId, maxResults, pageToken);
 
     return NextResponse.json({
-      items,
-      nextPageToken: null,
+      items: result.items,
+      nextPageToken: result.nextPageToken,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

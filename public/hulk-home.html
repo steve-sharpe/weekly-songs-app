@@ -479,13 +479,15 @@
         }
 
         function fetchVideos(pageToken = '') {
-            let apiUrl = YOUTUBE_FEED_ENDPOINT;
+            const params = new URLSearchParams({ maxResults: '12' });
 
             if (pageToken) {
-                apiUrl += `&pageToken=${pageToken}`;
+                params.set('pageToken', pageToken);
                 loadMoreBtn.textContent = 'Loading...';
                 loadMoreBtn.disabled = true;
             }
+
+            const apiUrl = `${YOUTUBE_FEED_ENDPOINT}?${params.toString()}`;
 
             fetch(apiUrl)
                 .then(async response => {
