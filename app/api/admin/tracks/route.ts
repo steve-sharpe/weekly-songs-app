@@ -17,20 +17,34 @@ export async function GET(request: NextRequest) {
 
     const rows = (await sql`
       SELECT
-        id,
-        title,
-        track_title,
-        artist_name,
-        photo_url,
-        album_name,
-        release_year,
-        genre,
-        duration_seconds,
-        mime_type,
-        web_view_link
-      FROM tracks
-      WHERE is_active = TRUE
-      ORDER BY COALESCE(artist_name, ''), COALESCE(track_title, title), id ASC;
+        t.id,
+        t.title,
+        t.track_title,
+        t.artist_name,
+        t.photo_url,
+        t.album_name,
+        t.release_year,
+        t.genre,
+        t.duration_seconds,
+        t.mime_type,
+        t.web_view_link,
+        COUNT(wpt.id)::int AS featured_count
+      FROM tracks t
+      LEFT JOIN weekly_playlist_tracks wpt ON wpt.track_id = t.id
+      WHERE t.is_active = TRUE
+      GROUP BY
+        t.id,
+        t.title,
+        t.track_title,
+        t.artist_name,
+        t.photo_url,
+        t.album_name,
+        t.release_year,
+        t.genre,
+        t.duration_seconds,
+        t.mime_type,
+        t.web_view_link
+      ORDER BY COALESCE(t.artist_name, ''), COALESCE(t.track_title, t.title), t.id ASC;
     `) as {
       id: number;
       title: string;
@@ -43,6 +57,7 @@ export async function GET(request: NextRequest) {
       duration_seconds: number | null;
       mime_type: string;
       web_view_link: string | null;
+      featured_count: number;
     }[];
 
     return NextResponse.json({ tracks: rows });

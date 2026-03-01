@@ -12,6 +12,7 @@ type AdminTrack = {
   release_year: number | null;
   genre: string | null;
   duration_seconds: number | null;
+  featured_count: number;
 };
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -92,6 +93,9 @@ export default function AdminTracksPage() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Record<number, { photoUrl: string }>>({});
+  const [nextWeekStart, setNextWeekStart] = useState("");
+  const [nextWeekTrackIds, setNextWeekTrackIds] = useState<number[]>([]);
+  const [savingNextWeek, setSavingNextWeek] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("admin_secret");
@@ -152,6 +156,22 @@ export default function AdminTracksPage() {
 
       if (settingsResponse.ok) {
         setTickerText(settingsBody.tickerText ?? "");
+      }
+
+      const nextWeekResponse = await fetch("/api/admin/weekly/next", {
+        headers: {
+          "x-admin-secret": adminSecret.trim(),
+        },
+      });
+
+      const nextWeekBody = (await nextWeekResponse.json()) as {
+        weekStart?: string;
+        selectedTrackIds?: number[];
+      };
+
+      if (nextWeekResponse.ok) {
+        setNextWeekStart(nextWeekBody.weekStart ?? "");
+        setNextWeekTrackIds(nextWeekBody.selectedTrackIds ?? []);
       }
 
       const initialEditing: Record<number, { photoUrl: string }> = {};
@@ -344,6 +364,66 @@ export default function AdminTracksPage() {
     }
   }
 
+  function toggleNextWeekTrack(trackId: number) {
+    setNextWeekTrackIds((prev) => {
+      if (prev.includes(trackId)) {
+        return prev.filter((id) => id !== trackId);
+      }
+
+      if (prev.length >= 4) {
+        return prev;
+      }
+
+      return [...prev, trackId];
+    });
+  }
+
+  async function saveNextWeekSelection() {
+    setMessage("");
+    setSavingNextWeek(true);
+
+    try {
+      if (!adminSecret.trim()) {
+        throw new Error("Enter admin secret first.");
+      }
+
+      if (nextWeekTrackIds.length === 0) {
+        throw new Error("Pick at least one song for next week.");
+      }
+
+      const response = await fetch("/api/admin/weekly/next", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret.trim(),
+        },
+        body: JSON.stringify({
+          trackIds: nextWeekTrackIds,
+        }),
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        weekStart?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "Failed to save next week selection.");
+      }
+
+      if (body.weekStart) {
+        setNextWeekStart(body.weekStart);
+      }
+
+      setMessage("Next week songs saved.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setSavingNextWeek(false);
+    }
+  }
+
   return (
     <div className="comic-bg min-h-screen px-4 py-8 sm:px-8">
       <main className="mx-auto max-w-6xl">
@@ -398,12 +478,34 @@ export default function AdminTracksPage() {
             </div>
           </article>
 
+          <article className="admin-card mt-6">
+            <h2 className="track-title">Next Week Song Picker</h2>
+            <p className="track-meta">
+              {nextWeekStart
+                ? `Select up to 4 songs for week starting ${nextWeekStart}.`
+                : "Select up to 4 songs for next week."}
+            </p>
+            <p className="track-meta">Selected: {nextWeekTrackIds.length} / 4</p>
+            <div className="admin-row">
+              <div />
+              <button
+                type="button"
+                className="admin-btn"
+                onClick={saveNextWeekSelection}
+                disabled={savingNextWeek}
+              >
+                {savingNextWeek ? "Saving..." : "Save Next Week Songs"}
+              </button>
+            </div>
+          </article>
+
           <div className="admin-grid mt-6">
             {filteredTracks.map((track) => (
               <article key={track.id} className="admin-card">
                 <div>
                   <h2 className="track-title">{track.track_title ?? track.title}</h2>
                   <p className="track-artist">{track.artist_name ?? "Unknown Artist"}</p>
+                  <p className="track-meta">Featured {track.featured_count} times</p>
                 </div>
 
                 {track.photo_url ? (
@@ -417,6 +519,15 @@ export default function AdminTracksPage() {
                 )}
 
                 <div className="admin-row">
+                  <button
+                    type="button"
+                    className="admin-btn"
+                    onClick={() => toggleNextWeekTrack(track.id)}
+                  >
+                    {nextWeekTrackIds.includes(track.id)
+                      ? "Selected for Next Week"
+                      : "Select for Next Week"}
+                  </button>
                   <input
                     type="url"
                     placeholder="https://..."
