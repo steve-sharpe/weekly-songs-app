@@ -157,9 +157,17 @@ export async function GET(request: Request) {
     const pageToken = url.searchParams.get("pageToken") ?? "";
     const apiKey = process.env.YOUTUBE_API_KEY ?? process.env.GOOGLE_YOUTUBE_API_KEY ?? "";
 
-    const result = apiKey
-      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey)
-      : await fetchByYoutubeRss(channelId, maxResults, pageToken);
+    let result: { items: VideoItem[]; nextPageToken: string | null };
+
+    if (apiKey) {
+      try {
+        result = await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey);
+      } catch {
+        result = await fetchByYoutubeRss(channelId, maxResults, pageToken);
+      }
+    } else {
+      result = await fetchByYoutubeRss(channelId, maxResults, pageToken);
+    }
 
     return NextResponse.json({
       items: result.items,
