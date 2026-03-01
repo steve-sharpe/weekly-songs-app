@@ -21,6 +21,16 @@ type ParsedMetadata = {
   durationSeconds: number | null;
 };
 
+type ExistingTrackRow = {
+  drive_file_id: string;
+  track_title: string | null;
+  artist_name: string | null;
+  album_name: string | null;
+  release_year: number | null;
+  genre: string | null;
+  duration_seconds: number | null;
+};
+
 function extractTrackMetadata(fileName: string): {
   trackTitle: string;
   artistName: string;
@@ -199,9 +209,44 @@ export async function syncTracksFromDrive() {
 
   const files = await listDriveAudioFiles();
 
+  const existingRows = (await sql`
+    SELECT
+      drive_file_id,
+      track_title,
+      artist_name,
+      album_name,
+      release_year,
+      genre,
+      duration_seconds
+    FROM tracks;
+  `) as ExistingTrackRow[];
+
+  const existingByDriveId = new Map<string, ExistingTrackRow>(
+    existingRows.map((row) => [row.drive_file_id, row]),
+  );
+
   for (const file of files) {
-    const embeddedMetadata = await readEmbeddedMetadata(file.id, file.mimeType);
-    const metadata = normalizeEmbeddedMetadata(file.name, embeddedMetadata);
+    const existing = existingByDriveId.get(file.id);
+
+    const hasCompleteMetadata = Boolean(
+      existing?.track_title?.trim() && existing?.artist_name?.trim(),
+    );
+
+    const embeddedMetadata = hasCompleteMetadata
+      ? null
+      : await readEmbeddedMetadata(file.id, file.mimeType);
+
+    const normalizedFromFile = normalizeEmbeddedMetadata(file.name, embeddedMetadata);
+
+    const metadata: ParsedMetadata = {
+      trackTitle: existing?.track_title?.trim() || normalizedFromFile.trackTitle,
+      artistName: existing?.artist_name?.trim() || normalizedFromFile.artistName,
+      albumName: existing?.album_name ?? normalizedFromFile.albumName,
+      releaseYear: existing?.release_year ?? normalizedFromFile.releaseYear,
+      genre: existing?.genre ?? normalizedFromFile.genre,
+      durationSeconds:
+        existing?.duration_seconds ?? normalizedFromFile.durationSeconds,
+    };
 
     await sql`
       INSERT INTO tracks (
