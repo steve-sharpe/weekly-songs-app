@@ -14,7 +14,7 @@ type TrackRow = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ trackId: string }> },
 ) {
   try {
@@ -40,14 +40,21 @@ export async function GET(
       return NextResponse.json({ error: "Track not found" }, { status: 404 });
     }
 
-    const { stream, contentType, contentLength } = await streamDriveFileById(
+    const range = request.headers.get("range") ?? undefined;
+
+    const { stream, status, contentType, contentLength, contentRange, acceptRanges } =
+      await streamDriveFileById(
       track.drive_file_id,
+      range,
     );
 
     return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
+      status,
       headers: {
         "Content-Type": contentType || track.mime_type || "audio/mpeg",
         ...(contentLength ? { "Content-Length": contentLength } : {}),
+        ...(contentRange ? { "Content-Range": contentRange } : {}),
+        ...(acceptRanges ? { "Accept-Ranges": acceptRanges } : {}),
         "Cache-Control": "public, max-age=300",
       },
     });

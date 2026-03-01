@@ -313,7 +313,10 @@ export async function syncTracksFromDrive() {
   };
 }
 
-export async function streamDriveFileById(driveFileId: string) {
+export async function streamDriveFileById(
+  driveFileId: string,
+  range?: string,
+) {
   const drive = getDriveClient();
   const response = await drive.files.get(
     {
@@ -323,14 +326,18 @@ export async function streamDriveFileById(driveFileId: string) {
     },
     {
       responseType: "stream",
+      ...(range ? { headers: { Range: range } } : {}),
     },
   );
 
   return {
     stream: response.data as unknown as Readable,
+    status: response.status ?? 200,
     contentType:
       (response.headers["content-type"] as string | undefined) ??
       "audio/mpeg",
     contentLength: response.headers["content-length"] as string | undefined,
+    contentRange: response.headers["content-range"] as string | undefined,
+    acceptRanges: response.headers["accept-ranges"] as string | undefined,
   };
 }
