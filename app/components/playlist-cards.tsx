@@ -114,6 +114,16 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
     await playTrackAt(previousIndex);
   }
 
+  async function handleSelectTrack(index: number) {
+    if (!hasTracks) {
+      return;
+    }
+
+    setIsPlayAllActive(false);
+    pauseAllTracks(true);
+    await playTrackAt(index);
+  }
+
   async function handleTrackEnded(index: number) {
     const nextIndex = index + 1;
     if (nextIndex >= tracks.length) {
@@ -153,6 +163,17 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
           <article
             key={track.id}
             className={`track-card ${activeIndex === index ? "track-card--active" : ""}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              void handleSelectTrack(index);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                void handleSelectTrack(index);
+              }
+            }}
           >
             {track.photoUrl ? (
               <img
