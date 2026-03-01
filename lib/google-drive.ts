@@ -143,21 +143,31 @@ function getDriveClient() {
 
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+  const privateKeyBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64;
 
-  if (!clientEmail || !privateKey) {
+  if (!clientEmail || (!privateKey && !privateKeyBase64)) {
     throw new Error(
-      "Missing Google service account credentials. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      "Missing Google service account credentials. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY (or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_BASE64).",
     );
   }
 
-  const normalizedPrivateKey = privateKey
+  const rawPrivateKey = privateKeyBase64
+    ? Buffer.from(privateKeyBase64.trim(), "base64").toString("utf8")
+    : privateKey ?? "";
+
+  const normalizedPrivateKey = rawPrivateKey
+    .replace(/\r/g, "")
     .trim()
     .replace(/^"|"$/g, "")
+    .replace(/^'|'$/g, "")
+    .replace(/\\\\n/g, "\\n")
     .replace(/\\n/g, "\n");
 
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: normalizedPrivateKey,
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: clientEmail.trim(),
+      private_key: normalizedPrivateKey,
+    },
     scopes: ["https://www.googleapis.com/auth/drive.readonly"],
   });
 
