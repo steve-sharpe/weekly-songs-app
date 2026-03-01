@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import PlaylistCards from "@/app/components/playlist-cards";
+import SongsViewSwitcher from "@/app/components/songs-view-switcher";
 import { ensureSchema, getSql } from "@/lib/db";
 import type { PlaylistTrack } from "@/lib/types";
 
@@ -72,6 +72,12 @@ export default async function HiddenAllSongsPage() {
   return (
     <div className="comic-bg min-h-screen px-4 py-8 sm:px-8">
       <main className="mx-auto max-w-6xl">
+        <div className="weekly-nav-row mb-3">
+          <a href="/" className="weekly-back-btn">
+            ← Home
+          </a>
+        </div>
+
         <section className="paper-panel">
           <h1 className="panel-title">All Drive Songs</h1>
           <p className="week-meta">Hidden Library • {tracks.length} tracks</p>
@@ -82,12 +88,7 @@ export default async function HiddenAllSongsPage() {
               <p className="mt-2 text-sm">Run sync first from Admin.</p>
             </div>
           ) : (
-            <>
-              <div className="weekly-subtitle-row">
-                <p className="weekly-subtitle">Select image to play</p>
-              </div>
-              <PlaylistCards tracks={displayTracks} />
-            </>
+            <SongsViewSwitcher tracks={displayTracks} />
           )}
         </section>
       </main>

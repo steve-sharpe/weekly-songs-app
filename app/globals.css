@@ -276,6 +276,116 @@ body {
   background: #f2f2f2;
 }
 
+.songs-view-toggle-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.2rem;
+}
+
+.songs-view-toggle-btn--active {
+  background: #0050ff;
+  color: #fff;
+}
+
+.compact-player-shell {
+  border: 3px solid #111;
+  background: #fff;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.24);
+  padding: 0.9rem;
+}
+
+.compact-player-controls {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.compact-player-now {
+  margin: 0;
+  font-family: var(--font-hulk-title), cursive;
+  font-size: 1.1rem;
+  background: #111;
+  color: #fff;
+  padding: 0.45rem 0.6rem;
+  text-align: center;
+}
+
+.compact-player-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.compact-shuffle-btn {
+  background: #ffeb3b;
+  color: #111;
+}
+
+.compact-playlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.compact-track-btn {
+  width: 100%;
+  text-align: left;
+  border: 2px solid #111;
+  background: #f9f9f9;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.15rem;
+  cursor: pointer;
+}
+
+.compact-track-btn:hover {
+  background: #ffe12b;
+}
+
+.compact-track-btn--active {
+  background: #0050ff;
+  color: #fff;
+}
+
+.compact-track-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.compact-track-meta {
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+
+.floating-top-btn {
+  position: fixed;
+  right: 0.85rem;
+  top: 55%;
+  transform: translateY(-50%);
+  z-index: 9998;
+  border: 3px solid #000;
+  background: #ffeb3b;
+  color: #111;
+  font-family: var(--font-hulk-title), cursive;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.65rem;
+  box-shadow: 4px 4px 0 #000;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.floating-top-btn:hover {
+  background: #0050ff;
+  color: #fff;
+  transform: translateY(-50%) translate(2px, 2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
 .now-playing-bar {
   position: fixed;
   left: 0;
@@ -585,6 +695,20 @@ body {
 
   .track-title {
     font-size: 1.75rem;
+  }
+
+  .songs-view-toggle-row {
+    justify-content: stretch;
+  }
+
+  .songs-view-toggle-row .play-all-btn {
+    flex: 1;
+  }
+
+  .floating-top-btn {
+    right: 0.45rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.5rem;
   }
 }
 

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Bangers, Inter, Permanent_Marker, Special_Elite } from "next/font/google";
+
+import BackToTopButton from "@/app/components/back-to-top-button";
 import "./globals.css";
 
 const bodyFont = Inter({
@@ -41,6 +43,7 @@ export default function RootLayout({
         className={`${bodyFont.variable} ${displayFont.variable} ${hulkTitleFont.variable} ${hulkBodyFont.variable} antialiased`}
       >
         {children}
+        <BackToTopButton />
       </body>
     </html>
   );
