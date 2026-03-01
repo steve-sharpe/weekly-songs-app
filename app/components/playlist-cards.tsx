@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { PlaylistTrack } from "@/lib/types";
 
@@ -20,7 +20,6 @@ function formatDuration(seconds: number | null): string {
 
 export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
   const audioRefs = useRef<Array<HTMLAudioElement | null>>([]);
-  const autoStartDoneRef = useRef(false);
   const [isPlayAllActive, setIsPlayAllActive] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [playerMessage, setPlayerMessage] = useState("");
@@ -153,27 +152,6 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
 
     await playTrackAt(nextIndex);
   }
-
-  useEffect(() => {
-    if (!hasTracks || autoStartDoneRef.current) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      if (autoStartDoneRef.current) {
-        return;
-      }
-
-      autoStartDoneRef.current = true;
-      if (activeIndex === null) {
-        void handleSelectTrack(0);
-      }
-    }, 10_000);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
-  }, [hasTracks, activeIndex]);
 
   return (
     <div className="playlist-shell">
