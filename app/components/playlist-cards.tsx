@@ -25,6 +25,7 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
   const [playerMessage, setPlayerMessage] = useState("");
 
   const hasTracks = useMemo(() => tracks.length > 0, [tracks.length]);
+  const nowPlayingTrack = activeIndex !== null ? tracks[activeIndex] : null;
 
   function stopAllTracks() {
     for (const audio of audioRefs.current) {
@@ -70,13 +71,20 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
     }
   }
 
-  async function handlePlayAll() {
+  async function handlePlay() {
     if (!hasTracks) {
       return;
     }
 
-    stopAllTracks();
     setIsPlayAllActive(true);
+
+    if (activeIndex !== null) {
+      pauseAllTracks(false);
+      await playTrackAt(activeIndex);
+      return;
+    }
+
+    stopAllTracks();
     await playTrackAt(0);
   }
 
@@ -107,10 +115,6 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
   }
 
   async function handleTrackEnded(index: number) {
-    if (!isPlayAllActive) {
-      return;
-    }
-
     const nextIndex = index + 1;
     if (nextIndex >= tracks.length) {
       setIsPlayAllActive(false);
@@ -140,45 +144,7 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
   }
 
   return (
-    <>
-      <div className="play-all-row mt-6">
-        <button
-          type="button"
-          className="play-all-btn play-all-btn--secondary"
-          onClick={() => {
-            void handleLastTrack();
-          }}
-          disabled={!hasTracks}
-        >
-          ⏮ Last Track
-        </button>
-        <button
-          type="button"
-          className="play-all-btn"
-          onClick={handlePlayAll}
-          disabled={!hasTracks}
-        >
-          ▶ Play All
-        </button>
-        <button
-          type="button"
-          className="play-all-btn play-all-btn--secondary"
-          onClick={() => {
-            void handleNextTrack();
-          }}
-          disabled={!hasTracks}
-        >
-          ⏭ Next Track
-        </button>
-        <button
-          type="button"
-          className="play-all-btn play-all-btn--secondary"
-          onClick={stopAllTracks}
-          disabled={!isPlayAllActive && activeIndex === null}
-        >
-          ■ Stop
-        </button>
-      </div>
+    <div className="playlist-shell">
 
       {playerMessage ? <p className="admin-message mt-3">{playerMessage}</p> : null}
 
@@ -205,12 +171,15 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
                 {` • ${formatDuration(track.durationSeconds)}`}
               </p>
               <audio
-                controls
                 preload="none"
                 src={track.streamUrl}
                 className="track-player w-full"
                 ref={(element) => {
                   audioRefs.current[index] = element;
+                }}
+                onPlay={() => {
+                  setActiveIndex(index);
+                  setPlayerMessage("");
                 }}
                 onEnded={() => {
                   void handleTrackEnded(index);
@@ -225,6 +194,67 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
           </article>
         ))}
       </div>
-    </>
+
+      <div className="now-playing-bar" role="region" aria-label="Now playing controls">
+        <div className="now-playing-meta">
+          <p className="now-playing-label">Now Playing</p>
+          <p className="now-playing-title">
+            {nowPlayingTrack ? nowPlayingTrack.trackTitle : "Not Playing"}
+          </p>
+          <p className="now-playing-artist">
+            {nowPlayingTrack ? nowPlayingTrack.artistName : "Select Play to start"}
+          </p>
+        </div>
+
+        <div className="now-playing-controls">
+          <button
+            type="button"
+            className="play-all-btn play-all-btn--secondary now-playing-btn"
+            onClick={() => {
+              void handleLastTrack();
+            }}
+            disabled={!hasTracks}
+            aria-label="Previous track"
+            title="Previous track"
+          >
+            ⏮
+          </button>
+          <button
+            type="button"
+            className="play-all-btn now-playing-btn"
+            onClick={() => {
+              void handlePlay();
+            }}
+            disabled={!hasTracks}
+            aria-label="Play"
+            title="Play"
+          >
+            ▶
+          </button>
+          <button
+            type="button"
+            className="play-all-btn play-all-btn--secondary now-playing-btn"
+            onClick={() => {
+              void handleNextTrack();
+            }}
+            disabled={!hasTracks}
+            aria-label="Next track"
+            title="Next track"
+          >
+            ⏭
+          </button>
+          <button
+            type="button"
+            className="play-all-btn play-all-btn--secondary now-playing-btn"
+            onClick={stopAllTracks}
+            disabled={!isPlayAllActive && activeIndex === null}
+            aria-label="Stop"
+            title="Stop"
+          >
+            ■
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
