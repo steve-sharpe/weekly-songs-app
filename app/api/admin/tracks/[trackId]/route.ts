@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { requireAdminAuth } from "@/lib/admin-auth";
 import { ensureSchema, getSql } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -18,8 +18,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ trackId: string }> },
 ) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
   }
 
   try {

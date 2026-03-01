@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { requireAdminAuth } from "@/lib/admin-auth";
 import { getTickerText, setTickerText } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
   }
 
   try {
@@ -24,8 +25,9 @@ type SettingsPayload = {
 };
 
 export async function PATCH(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
   }
 
   try {

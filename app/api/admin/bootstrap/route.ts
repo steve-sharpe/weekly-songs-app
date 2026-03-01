@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { requireAdminAuth } from "@/lib/admin-auth";
 import { syncTracksFromDrive } from "@/lib/google-drive";
 import { generateWeeklyPlaylist } from "@/lib/playlist";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authError = requireAdminAuth(request);
+  if (authError) {
+    return authError;
   }
 
   try {
