@@ -461,6 +461,7 @@
 
     <script>
         const YOUTUBE_FEED_ENDPOINT = '/api/youtube/videos';
+        const YOUTUBE_PAGE_SIZE = 24;
         const TITLE_OVERRIDES_KEY = 'hulkShowVideoTitleOverrides';
 
         const videoGrid = document.getElementById('videoGrid');
@@ -479,7 +480,7 @@
         }
 
         function fetchVideos(pageToken = '') {
-            const params = new URLSearchParams({ maxResults: '12' });
+            const params = new URLSearchParams({ maxResults: String(YOUTUBE_PAGE_SIZE) });
 
             if (pageToken) {
                 params.set('pageToken', pageToken);
