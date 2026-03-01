@@ -52,7 +52,7 @@ Open http://localhost:3000.
 - `GET/PATCH /api/admin/settings` → read/update ticker scroll text
 - `POST /api/admin/weekly` → generate weekly playlist manually
 - `PATCH /api/admin/tracks/:trackId` → manually update track metadata fields
-- `GET /api/cron/weekly` → weekly cron generation endpoint
+- `GET /api/cron/weekly` → weekly cron endpoint (syncs Drive tracks, then generates playlist)
 
 For admin routes, include one of:
 

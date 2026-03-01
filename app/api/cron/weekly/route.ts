@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { syncTracksFromDrive } from "@/lib/google-drive";
 import { generateWeeklyPlaylist } from "@/lib/playlist";
 
 export const runtime = "nodejs";
@@ -24,8 +25,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const syncResult = await syncTracksFromDrive();
     const playlist = await generateWeeklyPlaylist();
-    return NextResponse.json({ ok: true, playlist });
+    return NextResponse.json({ ok: true, sync: syncResult, playlist });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
