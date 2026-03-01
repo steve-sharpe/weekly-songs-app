@@ -24,15 +24,6 @@ export default async function Home() {
     playlist = null;
   }
 
-  const weekDateLabel = playlist
-    ? new Date(`${playlist.weekStart}T00:00:00Z`).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : null;
-
   return (
     <div className="comic-bg min-h-screen text-black">
       <main className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 pt-8 sm:px-8 sm:pt-10">
@@ -55,9 +46,7 @@ export default async function Home() {
 
           {playlist ? (
             <>
-              <p className="week-meta">
-                Week of {weekDateLabel} • Cycle #{playlist.cycleNumber}
-              </p>
+              <p className="week-meta">Select image to play</p>
 
               <PlaylistCards tracks={playlist.tracks} />
             </>
