@@ -48,8 +48,10 @@ export async function GET(
       range,
     );
 
+    const normalizedStatus = status === 206 && !contentRange ? 200 : status;
+
     return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
-      status,
+      status: normalizedStatus,
       headers: {
         "Content-Type": contentType || track.mime_type || "audio/mpeg",
         "Content-Disposition": "inline",
