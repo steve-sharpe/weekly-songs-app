@@ -22,6 +22,7 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
   const audioRefs = useRef<Array<HTMLAudioElement | null>>([]);
   const [isPlayAllActive, setIsPlayAllActive] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [playerMessage, setPlayerMessage] = useState("");
 
   const hasTracks = useMemo(() => tracks.length > 0, [tracks.length]);
 
@@ -59,9 +60,11 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
     }
 
     try {
+      setPlayerMessage("");
       await audio.play();
       setActiveIndex(index);
     } catch {
+      setPlayerMessage("Track could not be played. Trying next available track.");
       setIsPlayAllActive(false);
       setActiveIndex(null);
     }
@@ -118,6 +121,24 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
     await playTrackAt(nextIndex);
   }
 
+  async function handleTrackError(index: number) {
+    if (!isPlayAllActive) {
+      setActiveIndex(null);
+      setPlayerMessage("This track could not be loaded.");
+      return;
+    }
+
+    const nextIndex = index + 1;
+    if (nextIndex >= tracks.length) {
+      setIsPlayAllActive(false);
+      setActiveIndex(null);
+      setPlayerMessage("Some tracks failed to load.");
+      return;
+    }
+
+    await playTrackAt(nextIndex);
+  }
+
   return (
     <>
       <div className="play-all-row mt-6">
@@ -159,6 +180,8 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
         </button>
       </div>
 
+      {playerMessage ? <p className="admin-message mt-3">{playerMessage}</p> : null}
+
       <div className="track-grid mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
         {tracks.map((track, index) => (
           <article
@@ -184,6 +207,7 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
               <audio
                 controls
                 preload="none"
+                src={track.streamUrl}
                 className="track-player w-full"
                 ref={(element) => {
                   audioRefs.current[index] = element;
@@ -191,8 +215,10 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
                 onEnded={() => {
                   void handleTrackEnded(index);
                 }}
+                onError={() => {
+                  void handleTrackError(index);
+                }}
               >
-                <source src={track.streamUrl} type={track.mimeType} />
                 Your browser does not support audio playback.
               </audio>
             </div>
