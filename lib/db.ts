@@ -2,13 +2,27 @@ import { neon } from "@neondatabase/serverless";
 
 let schemaInitPromise: Promise<void> | null = null;
 
-function getSql() {
-  const databaseUrl = process.env.DATABASE_URL;
+function getDatabaseUrl(): string {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.NEON_DATABASE_URL,
+  ];
+
+  const databaseUrl = candidates.find((value) => value?.trim())?.trim();
 
   if (!databaseUrl) {
-    throw new Error("Missing DATABASE_URL environment variable.");
+    throw new Error(
+      "Missing database connection string. Set DATABASE_URL (or POSTGRES_URL / POSTGRES_PRISMA_URL / NEON_DATABASE_URL).",
+    );
   }
 
+  return databaseUrl;
+}
+
+function getSql() {
+  const databaseUrl = getDatabaseUrl();
   return neon(databaseUrl);
 }
 
