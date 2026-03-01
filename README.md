@@ -49,6 +49,7 @@ Open http://localhost:3000.
 - `GET /api/playlist/current` → current (or latest) playlist
 - `GET /api/stream/:trackId` → proxied audio stream from Google Drive
 - `POST /api/admin/sync` → sync Drive tracks into DB
+- `POST /api/admin/bootstrap` → sync tracks and generate current week playlist in one call
 - `GET/PATCH /api/admin/settings` → read/update ticker scroll text
 - `POST /api/admin/weekly` → generate weekly playlist manually
 - `PATCH /api/admin/tracks/:trackId` → manually update track metadata fields

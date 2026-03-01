@@ -208,6 +208,8 @@ export async function syncTracksFromDrive() {
   const sql = getSql();
 
   const files = await listDriveAudioFiles();
+  let metadataParsedCount = 0;
+  let metadataSkippedCount = 0;
 
   const existingRows = (await sql`
     SELECT
@@ -235,6 +237,12 @@ export async function syncTracksFromDrive() {
     const embeddedMetadata = hasCompleteMetadata
       ? null
       : await readEmbeddedMetadata(file.id, file.mimeType);
+
+    if (hasCompleteMetadata) {
+      metadataSkippedCount += 1;
+    } else {
+      metadataParsedCount += 1;
+    }
 
     const normalizedFromFile = normalizeEmbeddedMetadata(file.name, embeddedMetadata);
 
@@ -298,6 +306,8 @@ export async function syncTracksFromDrive() {
 
   return {
     totalFound: files.length,
+    metadataParsedCount,
+    metadataSkippedCount,
     syncedAt: new Date().toISOString(),
   };
 }

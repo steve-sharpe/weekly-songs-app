@@ -88,6 +88,7 @@ export default function AdminTracksPage() {
   const [tickerText, setTickerText] = useState("");
   const [tracks, setTracks] = useState<AdminTrack[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Record<number, { photoUrl: string }>>({});
@@ -291,6 +292,58 @@ export default function AdminTracksPage() {
     }
   }
 
+  async function bootstrapProduction() {
+    setMessage("");
+    setBootstrapping(true);
+
+    try {
+      if (!adminSecret.trim()) {
+        throw new Error("Enter admin secret first.");
+      }
+
+      window.localStorage.setItem("admin_secret", adminSecret.trim());
+
+      const response = await fetch("/api/admin/bootstrap", {
+        method: "POST",
+        headers: {
+          "x-admin-secret": adminSecret.trim(),
+        },
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        sync?: {
+          totalFound?: number;
+          metadataParsedCount?: number;
+          metadataSkippedCount?: number;
+        };
+        playlist?: {
+          tracks?: { id: number }[];
+        };
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "Failed to bootstrap production.");
+      }
+
+      const totalFound = body.sync?.totalFound ?? 0;
+      const parsedCount = body.sync?.metadataParsedCount ?? 0;
+      const skippedCount = body.sync?.metadataSkippedCount ?? 0;
+      const selected = body.playlist?.tracks?.length ?? 0;
+
+      setMessage(
+        `Bootstrap complete. Synced ${totalFound} tracks (${parsedCount} parsed, ${skippedCount} skipped). Weekly playlist has ${selected} track${selected === 1 ? "" : "s"}.`,
+      );
+
+      await loadTracks();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setBootstrapping(false);
+    }
+  }
+
   return (
     <div className="comic-bg min-h-screen px-4 py-8 sm:px-8">
       <main className="mx-auto max-w-6xl">
@@ -315,6 +368,14 @@ export default function AdminTracksPage() {
             />
             <button type="submit" className="admin-btn" disabled={loading}>
               {loading ? "Loading..." : "Load Tracks"}
+            </button>
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={bootstrapProduction}
+              disabled={bootstrapping}
+            >
+              {bootstrapping ? "Bootstrapping..." : "Bootstrap Production"}
             </button>
           </form>
 
