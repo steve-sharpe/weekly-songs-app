@@ -328,17 +328,31 @@ export async function streamDriveFileById(
   range?: string,
 ) {
   const drive = getDriveClient();
-  const response = await drive.files.get(
-    {
-      fileId: driveFileId,
-      alt: "media",
-      supportsAllDrives: true,
-    },
-    {
-      responseType: "stream",
-      ...(range ? { headers: { Range: range } } : {}),
-    },
-  );
+
+  const requestConfig = {
+    fileId: driveFileId,
+    alt: "media" as const,
+    supportsAllDrives: true,
+  };
+
+  const response = await (async () => {
+    if (!range) {
+      return drive.files.get(requestConfig, {
+        responseType: "stream",
+      });
+    }
+
+    try {
+      return await drive.files.get(requestConfig, {
+        responseType: "stream",
+        headers: { Range: range },
+      });
+    } catch {
+      return drive.files.get(requestConfig, {
+        responseType: "stream",
+      });
+    }
+  })();
 
   return {
     stream: response.data as unknown as Readable,

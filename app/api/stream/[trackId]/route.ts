@@ -52,6 +52,7 @@ export async function GET(
       status,
       headers: {
         "Content-Type": contentType || track.mime_type || "audio/mpeg",
+        "Content-Disposition": "inline",
         ...(contentLength ? { "Content-Length": contentLength } : {}),
         ...(contentRange ? { "Content-Range": contentRange } : {}),
         ...(acceptRanges ? { "Accept-Ranges": acceptRanges } : {}),
