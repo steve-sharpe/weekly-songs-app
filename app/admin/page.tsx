@@ -270,7 +270,43 @@ export default function AdminTracksPage() {
         ),
       );
 
-      setMessage("Image loaded. Click Save Photo to persist.");
+      if (!adminSecret.trim()) {
+        throw new Error("Enter admin secret first.");
+      }
+
+      const response = await fetch(`/api/admin/tracks/${trackId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret.trim(),
+        },
+        body: JSON.stringify({
+          photoUrl: dataUrl,
+        }),
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        track?: AdminTrack;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error || "Failed to autosave photo.");
+      }
+
+      setTracks((prev) =>
+        prev.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                photo_url: body.track?.photo_url ?? dataUrl,
+              }
+            : track,
+        ),
+      );
+
+      setMessage("Image uploaded and saved.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unknown error");
     }
