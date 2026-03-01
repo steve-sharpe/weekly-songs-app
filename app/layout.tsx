@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bangers, Inter, Permanent_Marker, Special_Elite } from "next/font/google";
+import Script from "next/script";
 
 import BackToTopButton from "@/app/components/back-to-top-button";
 import "./globals.css";
@@ -27,6 +28,9 @@ const hulkBodyFont = Special_Elite({
   subsets: ["latin"],
 });
 
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-YB504H4P8Q";
+
 export const metadata: Metadata = {
   title: "Weekly Music Vault",
   description: "Weekly 4-song playlist generated from Google Drive",
@@ -42,6 +46,18 @@ export default function RootLayout({
       <body
         className={`${bodyFont.variable} ${displayFont.variable} ${hulkTitleFont.variable} ${hulkBodyFont.variable} antialiased`}
       >
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
         {children}
         <BackToTopButton />
       </body>
