@@ -5,9 +5,18 @@ import PlaylistCards from "@/app/components/playlist-cards";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const DEFAULT_TICKER_TEXT =
+  "NEW WEEKLY PLAYLIST • 4 RANDOM TRACKS • NO REPEATS UNTIL EVERY SONG PLAYS • POWERED BY GOOGLE DRIVE •";
+
 export default async function Home() {
   let playlist = null;
-  const tickerText = await getTickerText();
+  let tickerText = DEFAULT_TICKER_TEXT;
+
+  try {
+    tickerText = await getTickerText();
+  } catch {
+    tickerText = DEFAULT_TICKER_TEXT;
+  }
 
   try {
     playlist = await getCurrentWeeklyPlaylist();
