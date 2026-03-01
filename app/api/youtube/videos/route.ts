@@ -58,6 +58,7 @@ async function fetchByYoutubeDataApi(
   maxResults: number,
   pageToken: string,
   apiKey: string,
+  referer: string,
 ) {
   const searchParams = new URLSearchParams({
     key: apiKey,
@@ -78,6 +79,8 @@ async function fetchByYoutubeDataApi(
       cache: "no-store",
       headers: {
         "User-Agent": "weekly-songs-app/1.0",
+        Referer: referer,
+        Origin: new URL(referer).origin,
       },
     },
   );
@@ -169,9 +172,13 @@ export async function GET(request: Request) {
       process.env.HULK_YOUTUBE_API_KEY ??
       process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ??
       "";
+    const referer =
+      process.env.YOUTUBE_API_REFERER ??
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      "https://weekly-songs-app.vercel.app/";
 
     const result = apiKey
-      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey)
+      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey, referer)
       : await fetchByYoutubeRss(channelId, maxResults, pageToken);
 
     return NextResponse.json({
