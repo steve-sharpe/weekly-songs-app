@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
+import PlaylistCards from "@/app/components/playlist-cards";
 import { ensureSchema, getSql } from "@/lib/db";
+import type { PlaylistTrack } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,19 +20,14 @@ type TrackRow = {
   title: string;
   track_title: string | null;
   artist_name: string | null;
+  photo_url: string | null;
   album_name: string | null;
+  release_year: number | null;
+  genre: string | null;
   duration_seconds: number | null;
+  mime_type: string;
+  web_view_link: string | null;
 };
-
-function formatDuration(seconds: number | null): string {
-  if (!seconds || seconds <= 0) {
-    return "--:--";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
-}
 
 async function getAllTracks(): Promise<TrackRow[]> {
   await ensureSchema();
@@ -42,8 +39,13 @@ async function getAllTracks(): Promise<TrackRow[]> {
       title,
       track_title,
       artist_name,
+      photo_url,
       album_name,
-      duration_seconds
+      release_year,
+      genre,
+      duration_seconds,
+      mime_type,
+      web_view_link
     FROM tracks
     WHERE is_active = TRUE
     ORDER BY COALESCE(artist_name, ''), COALESCE(track_title, title), id ASC;
@@ -52,6 +54,20 @@ async function getAllTracks(): Promise<TrackRow[]> {
 
 export default async function HiddenAllSongsPage() {
   const tracks = await getAllTracks();
+  const displayTracks: PlaylistTrack[] = tracks.map((track) => ({
+    id: track.id,
+    title: track.title,
+    trackTitle: track.track_title ?? track.title,
+    artistName: track.artist_name ?? "Unknown Artist",
+    photoUrl: track.photo_url,
+    albumName: track.album_name,
+    releaseYear: track.release_year,
+    genre: track.genre,
+    durationSeconds: track.duration_seconds,
+    mimeType: track.mime_type,
+    streamUrl: `/api/stream/${track.id}`,
+    webViewLink: track.web_view_link,
+  }));
 
   return (
     <div className="comic-bg min-h-screen px-4 py-8 sm:px-8">
@@ -66,24 +82,12 @@ export default async function HiddenAllSongsPage() {
               <p className="mt-2 text-sm">Run sync first from Admin.</p>
             </div>
           ) : (
-            <div className="admin-grid mt-6">
-              {tracks.map((track) => (
-                <article key={track.id} className="admin-card">
-                  <div>
-                    <h2 className="track-title">{track.track_title ?? track.title}</h2>
-                    <p className="track-artist">{track.artist_name ?? "Unknown Artist"}</p>
-                    <p className="track-meta">
-                      {track.album_name ? `${track.album_name} • ` : ""}
-                      {formatDuration(track.duration_seconds)}
-                    </p>
-                  </div>
-
-                  <audio controls preload="none" className="track-player w-full" src={`/api/stream/${track.id}`}>
-                    Your browser does not support audio playback.
-                  </audio>
-                </article>
-              ))}
-            </div>
+            <>
+              <div className="weekly-subtitle-row">
+                <p className="weekly-subtitle">Select image to play</p>
+              </div>
+              <PlaylistCards tracks={displayTracks} />
+            </>
           )}
         </section>
       </main>

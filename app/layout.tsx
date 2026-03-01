@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bangers, Inter } from "next/font/google";
+import { Bangers, Inter, Permanent_Marker, Special_Elite } from "next/font/google";
 import "./globals.css";
 
 const bodyFont = Inter({
@@ -9,6 +9,18 @@ const bodyFont = Inter({
 
 const displayFont = Bangers({
   variable: "--font-display",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const hulkTitleFont = Permanent_Marker({
+  variable: "--font-hulk-title",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const hulkBodyFont = Special_Elite({
+  variable: "--font-hulk-body",
   weight: "400",
   subsets: ["latin"],
 });
@@ -25,7 +37,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bodyFont.variable} ${displayFont.variable} antialiased`}>
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable} ${hulkTitleFont.variable} ${hulkBodyFont.variable} antialiased`}
+      >
         {children}
       </body>
     </html>
