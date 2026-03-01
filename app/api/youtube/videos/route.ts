@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const DEFAULT_MAX_RESULTS = 24;
+const DEFAULT_MAX_RESULTS = 12;
 const DEFAULT_CHANNEL_ID = "UCZRZtepB5V06Ya5VAC66XpA";
 
 type VideoItem = {
@@ -49,16 +49,11 @@ function toPositiveInt(value: string | null, fallback: number): number {
   return parsed;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 async function fetchByYoutubeDataApi(
   channelId: string,
   maxResults: number,
   pageToken: string,
   apiKey: string,
-  referer: string,
 ) {
   const searchParams = new URLSearchParams({
     key: apiKey,
@@ -79,8 +74,6 @@ async function fetchByYoutubeDataApi(
       cache: "no-store",
       headers: {
         "User-Agent": "weekly-songs-app/1.0",
-        Referer: referer,
-        Origin: new URL(referer).origin,
       },
     },
   );
@@ -160,25 +153,12 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const channelId = process.env.HULK_YOUTUBE_CHANNEL_ID ?? DEFAULT_CHANNEL_ID;
-    const maxResults = clamp(
-      toPositiveInt(url.searchParams.get("maxResults"), DEFAULT_MAX_RESULTS),
-      1,
-      50,
-    );
+    const maxResults = toPositiveInt(url.searchParams.get("maxResults"), DEFAULT_MAX_RESULTS);
     const pageToken = url.searchParams.get("pageToken") ?? "";
-    const apiKey =
-      process.env.YOUTUBE_API_KEY ??
-      process.env.GOOGLE_YOUTUBE_API_KEY ??
-      process.env.HULK_YOUTUBE_API_KEY ??
-      process.env.NEXT_PUBLIC_YOUTUBE_API_KEY ??
-      "";
-    const referer =
-      process.env.YOUTUBE_API_REFERER ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      "https://weekly-songs-app.vercel.app/";
+    const apiKey = process.env.YOUTUBE_API_KEY ?? process.env.GOOGLE_YOUTUBE_API_KEY ?? "";
 
     const result = apiKey
-      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey, referer)
+      ? await fetchByYoutubeDataApi(channelId, maxResults, pageToken, apiKey)
       : await fetchByYoutubeRss(channelId, maxResults, pageToken);
 
     return NextResponse.json({
