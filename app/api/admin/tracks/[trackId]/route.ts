@@ -1,23 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { ensureSchema, getSql } from "@/lib/db";
 
 export const runtime = "nodejs";
-
-function isAdminAuthorized(request: NextRequest): boolean {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    return false;
-  }
-
-  const headerSecret = request.headers.get("x-admin-secret");
-  const bearer = request.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-
-  return headerSecret === secret || bearer === secret;
-}
 
 type UpdatePayload = {
   trackTitle?: string | null;
