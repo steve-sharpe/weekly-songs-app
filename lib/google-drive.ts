@@ -1,4 +1,5 @@
 import { Readable } from "node:stream";
+import { existsSync } from "node:fs";
 import { google } from "googleapis";
 import { parseStream } from "music-metadata";
 
@@ -129,9 +130,9 @@ async function readEmbeddedMetadata(
 }
 
 function getDriveClient() {
-  const keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE;
+  const keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE?.trim();
 
-  if (keyFile) {
+  if (keyFile && existsSync(keyFile)) {
     const auth = new google.auth.GoogleAuth({
       keyFile,
       scopes: ["https://www.googleapis.com/auth/drive.readonly"],
