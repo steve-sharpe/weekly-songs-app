@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Bangers, Inter, Permanent_Marker, Special_Elite } from "next/font/google";
 import Script from "next/script";
 
@@ -60,6 +62,8 @@ export default function RootLayout({
         </Script>
         {children}
         <BackToTopButton />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

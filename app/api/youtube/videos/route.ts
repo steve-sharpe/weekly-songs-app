@@ -175,6 +175,13 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        items: [],
+        nextPageToken: null,
+        warning: message,
+      },
+      { status: 200 },
+    );
   }
 }
