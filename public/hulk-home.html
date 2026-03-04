@@ -78,12 +78,13 @@
 
         header h1 {
             font-family: 'Permanent Marker', cursive;
-            font-size: 4.5em;
+            font-size: clamp(3rem, 7.2vw, 5.3rem);
             color: #fff;
             margin: 0;
-            letter-spacing: 2px;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            text-shadow: 5px 5px 0px #e52b20;
+            line-height: 0.95;
+            text-shadow: 6px 6px 0px #e52b20;
             transform: rotate(-1deg);
         }
 
@@ -107,11 +108,12 @@
 
         .marquee-content {
             display: inline-block;
+            white-space: nowrap;
             animation: scrollText 20s linear infinite;
         }
 
         @keyframes scrollText {
-            0% { transform: translateX(0); }
+            0% { transform: translateX(0%); }
             100% { transform: translateX(-50%); }
         }
 
@@ -134,12 +136,25 @@
 
         h2 {
             font-family: 'Permanent Marker', cursive;
-            font-size: 3.5em;
+            font-size: clamp(2.2rem, 4.8vw, 4.1rem);
             color: #ffeb3b;
             text-shadow: 4px 4px 0px #000;
-            letter-spacing: 2px;
+            letter-spacing: 0.06em;
             transform: rotate(-2deg);
-            margin-bottom: 30px;
+            margin-bottom: 12px;
+        }
+
+        .archive-subtitle {
+            margin: 0 0 26px 0;
+            font-size: 1rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #2d2d2d;
+            background: transparent;
+            padding: 0;
+            display: block;
+            font-family: 'Special Elite', monospace;
+            transform: rotate(-0.4deg);
         }
 
         p {
@@ -218,7 +233,9 @@
 
         .paper-section {
             background-color: #e8e8e8;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            background-image:
+                linear-gradient(175deg, rgba(255,255,255,0.45) 0%, rgba(0,0,0,0.04) 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
             padding: 60px 30px;
             border: 5px solid #111;
             box-shadow: 15px 15px 0px rgba(0,0,0,0.8);
@@ -241,6 +258,48 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             transform: rotate(15deg);
             z-index: 5;
+        }
+
+        .paper-section::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: -8px;
+            height: 14px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(17,17,17,0.15) 2%,
+                transparent 5%,
+                rgba(17,17,17,0.12) 9%,
+                transparent 13%,
+                rgba(17,17,17,0.18) 18%,
+                transparent 24%,
+                rgba(17,17,17,0.12) 30%,
+                transparent 36%,
+                rgba(17,17,17,0.16) 44%,
+                transparent 52%,
+                rgba(17,17,17,0.14) 60%,
+                transparent 68%,
+                rgba(17,17,17,0.18) 76%,
+                transparent 84%,
+                rgba(17,17,17,0.14) 92%,
+                transparent 100%);
+            clip-path: polygon(0 0, 4% 70%, 8% 30%, 13% 80%, 18% 25%, 24% 78%, 31% 20%, 38% 85%, 45% 25%, 52% 75%, 60% 22%, 67% 86%, 75% 18%, 82% 80%, 89% 26%, 95% 70%, 100% 0, 100% 100%, 0 100%);
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .paper-crease {
+            position: absolute;
+            top: 18px;
+            bottom: 18px;
+            left: 50%;
+            width: 3px;
+            transform: translateX(-50%) rotate(-0.6deg);
+            background: linear-gradient(180deg, rgba(0,0,0,0.08), rgba(255,255,255,0.24), rgba(0,0,0,0.08));
+            opacity: 0.45;
+            pointer-events: none;
         }
 
         .paper-section h2 {
@@ -293,6 +352,11 @@
             transform: scale(1.05) rotate(0deg);
             z-index: 20;
             box-shadow: 12px 12px 0px rgba(0,0,0,0.9);
+        }
+
+        .video-card.glitch-pulse,
+        .video-card:hover {
+            animation: chromaticShift 160ms steps(2, end) 1;
         }
 
         .video-card:hover .video-thumbnail { filter: contrast(130%) saturate(120%); }
@@ -376,14 +440,36 @@
 
         .video-title {
             color: #111;
-            font-size: 1.28em;
+            font-size: 1.46em;
             font-weight: bold;
-            margin: 16px 4px 0 4px;
+            margin: 16px 4px 2px 4px;
             text-align: center;
-            line-height: 1.3;
+            line-height: 1.22;
             font-family: 'Permanent Marker', cursive;
-            letter-spacing: 0.01em;
+            letter-spacing: 0.02em;
             transform: rotate(-1deg);
+        }
+
+        .video-meta {
+            margin: 0;
+            text-align: center;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+            color: #555;
+            background: transparent;
+            padding: 0;
+            display: block;
+            font-family: 'Special Elite', monospace;
+        }
+
+
+        @keyframes chromaticShift {
+            0% { transform: translate(0, 0); filter: none; }
+            30% { transform: translate(1px, -1px); filter: drop-shadow(-1px 0 #ff2a6d) drop-shadow(1px 0 #46dbff); }
+            65% { transform: translate(-1px, 1px); filter: drop-shadow(1px 0 #ff2a6d) drop-shadow(-1px 0 #46dbff); }
+            100% { transform: translate(0, 0); filter: none; }
         }
 
         .load-more-btn { display: none; margin: 40px auto; width: 100%; max-width: 400px; }
@@ -449,12 +535,15 @@
         footer p { background: transparent; padding: 0; font-size: 1em; }
 
         @media (max-width: 768px) {
-            header h1 { font-size: 2.8em; }
-            h2 { font-size: 2.2em; margin-bottom: 20px; transform: none; }
+            header h1 { font-size: 2.95em; }
+            h2 { font-size: 2.25em; margin-bottom: 10px; transform: none; }
+            .archive-subtitle { font-size: 0.84rem; letter-spacing: 0.08em; margin-bottom: 18px; transform: none; }
 
             .caution-tape { transform: none; margin: 15px 0 25px 0; font-size: 1.3em; border-left: none; border-right: none;}
             .paper-section { width: 100%; transform: none; padding: 25px 15px; border-left: none; border-right: none; box-shadow: none; border-bottom: 5px solid #111;}
             .paper-section::before { display: none; }
+            .paper-section::after { display: none; }
+            .paper-crease { display: none; }
 
             main { padding: 10px; }
             .content-wrap { padding: 0; }
@@ -508,8 +597,10 @@
             </section>
 
             <div class="paper-section">
+                <div class="paper-crease" aria-hidden="true"></div>
                 <section id="about" style="margin-bottom: 0;">
                     <h2>The Archive</h2>
+                    <p class="archive-subtitle">Recent episodes, interviews, music, and moments</p>
                     <div id="videoGrid" class="video-grid"></div>
 
                     <button id="loadMoreBtn" class="load-more-btn">Load More Episodes</button>
@@ -557,7 +648,6 @@
         const YOUTUBE_FEED_ENDPOINT = '/api/youtube/videos';
         const TITLE_OVERRIDES_KEY = 'hulkShowVideoTitleOverrides';
         const EPISODE_BATCH_SIZE = 30;
-
         const videoGrid = document.getElementById('videoGrid');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         let nextPageToken = '';
@@ -624,13 +714,21 @@
                         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
                         const card = document.createElement('a');
-                        card.className = 'video-card';
+                        card.className = 'video-card glitchable';
                         card.href = videoUrl;
                         card.target = "_blank";
 
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = title;
                         const cleanTitle = tempDiv.textContent || tempDiv.innerText;
+                        const publishDate = item?.snippet?.publishTime || item?.snippet?.publishedAt;
+                        const dateLabel = publishDate
+                            ? new Date(publishDate).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                            })
+                            : 'Archive Episode';
 
                         card.innerHTML = `
                             <div class="video-tv">
@@ -639,6 +737,7 @@
                                 </div>
                             </div>
                             <h4 class="video-title">${cleanTitle}</h4>
+                            <p class="video-meta">${dateLabel}</p>
                         `;
 
                         videoGrid.appendChild(card);
@@ -669,6 +768,18 @@
             if (nextPageToken) {
                 fetchVideos(nextPageToken);
             }
+        });
+
+        document.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target.closest('.glitchable') : null;
+            if (!target) {
+                return;
+            }
+
+            target.classList.remove('glitch-pulse');
+            void target.offsetWidth;
+            target.classList.add('glitch-pulse');
+            setTimeout(() => target.classList.remove('glitch-pulse'), 180);
         });
 
         var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xlgwwbld';
