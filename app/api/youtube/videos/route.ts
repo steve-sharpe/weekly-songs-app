@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const DEFAULT_MAX_RESULTS = 12;
+const DEFAULT_MAX_RESULTS = 30;
 const DEFAULT_CHANNEL_ID = "UCZRZtepB5V06Ya5VAC66XpA";
 
 type VideoItem = {

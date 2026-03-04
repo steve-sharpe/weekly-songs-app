@@ -462,6 +462,7 @@
     <script>
         const YOUTUBE_FEED_ENDPOINT = '/api/youtube/videos';
         const TITLE_OVERRIDES_KEY = 'hulkShowVideoTitleOverrides';
+        const EPISODE_BATCH_SIZE = 30;
 
         const videoGrid = document.getElementById('videoGrid');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
@@ -479,7 +480,7 @@
         }
 
         function fetchVideos(pageToken = '') {
-            const params = new URLSearchParams({ maxResults: '12' });
+            const params = new URLSearchParams({ maxResults: String(EPISODE_BATCH_SIZE) });
 
             if (pageToken) {
                 params.set('pageToken', pageToken);
