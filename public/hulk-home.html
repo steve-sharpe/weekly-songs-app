@@ -259,8 +259,8 @@
         }
 
         .video-card {
-            background-color: #fff;
-            padding: 12px 12px 25px 12px;
+            background: linear-gradient(180deg, #fff 0%, #f5f1e8 100%);
+            padding: 12px 12px 30px 12px;
             border: 3px solid #111;
             box-shadow: 8px 8px 0px rgba(0,0,0,0.6);
             text-decoration: none;
@@ -269,6 +269,21 @@
             position: relative;
             transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.2s ease;
             width: 100%;
+        }
+
+        .video-card::before {
+            content: '';
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 98px;
+            height: 26px;
+            background: rgba(235, 235, 235, 0.85);
+            border: 1px solid rgba(0,0,0,0.2);
+            box-shadow: 0 3px 5px rgba(0,0,0,0.15);
+            z-index: 3;
+            pointer-events: none;
         }
 
         .video-card:nth-child(even) { transform: rotate(2deg); }
@@ -280,18 +295,96 @@
             box-shadow: 12px 12px 0px rgba(0,0,0,0.9);
         }
 
-        .video-card:hover .video-thumbnail { filter: grayscale(100%) contrast(150%); }
+        .video-card:hover .video-thumbnail { filter: contrast(130%) saturate(120%); }
+
+        .video-tv {
+            position: relative;
+            border: 4px solid #111;
+            border-radius: 10px;
+            background: radial-gradient(circle at 50% 50%, #2f3f4a 0%, #12181c 100%);
+            padding: 10px;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.2), inset 0 -6px 16px rgba(0,0,0,0.45);
+            overflow: hidden;
+        }
+
+        .video-tv::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .video-tv::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 6px;
+            height: 3px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #46dbff, #ffeb3b, #e52b20);
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .video-screen {
+            position: relative;
+            border: 2px solid #111;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .video-screen::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.08) 0px,
+                rgba(255, 255, 255, 0.08) 1px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 3px
+            );
+            pointer-events: none;
+            z-index: 2;
+            mix-blend-mode: overlay;
+        }
+
+        .video-screen::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.35;
+        }
 
         .video-thumbnail {
             width: 100%;
             aspect-ratio: 16/9;
             object-fit: cover;
-            border: 2px solid #111;
+            border: none;
             filter: contrast(110%) saturate(120%);
             transition: filter 0.2s ease;
+            display: block;
         }
 
-        .video-title { color: #111; font-size: 1.3em; font-weight: bold; margin: 15px 0 0 0; text-align: center; line-height: 1.3; }
+        .video-title {
+            color: #111;
+            font-size: 1.28em;
+            font-weight: bold;
+            margin: 16px 4px 0 4px;
+            text-align: center;
+            line-height: 1.3;
+            font-family: 'Permanent Marker', cursive;
+            letter-spacing: 0.01em;
+            transform: rotate(-1deg);
+        }
 
         .load-more-btn { display: none; margin: 40px auto; width: 100%; max-width: 400px; }
 
@@ -375,6 +468,7 @@
             .video-grid { padding: 0; gap: 25px; }
             .video-card { box-shadow: 4px 4px 0px rgba(0,0,0,0.6); transform: none !important; }
             .video-card:hover { transform: scale(1.02) !important; box-shadow: 6px 6px 0px rgba(0,0,0,0.9); }
+            .video-card::before { transform: translateX(-50%); }
 
             .modal-content { border: 4px solid #111; box-shadow: 6px 6px 0px #000; padding: 20px; width: 95%; margin: 15% auto; }
             .submit-btn, .cancel-btn { font-size: 1.1em; box-shadow: 3px 3px 0px #111; }
@@ -539,7 +633,11 @@
                         const cleanTitle = tempDiv.textContent || tempDiv.innerText;
 
                         card.innerHTML = `
-                            <img class="video-thumbnail" src="${thumbnailUrl}" alt="${cleanTitle}">
+                            <div class="video-tv">
+                                <div class="video-screen">
+                                    <img class="video-thumbnail" src="${thumbnailUrl}" alt="${cleanTitle}">
+                                </div>
+                            </div>
                             <h4 class="video-title">${cleanTitle}</h4>
                         `;
 
