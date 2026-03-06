@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import PlaylistCards from "@/app/components/playlist-cards";
 import type { PlaylistTrack } from "@/lib/types";
@@ -26,6 +26,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShuffleActive, setIsShuffleActive] = useState(false);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [playerMessage, setPlayerMessage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -39,6 +40,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     }
 
     try {
+      audio.load();
       await audio.play();
       setIsPlaying(true);
       setPlayerMessage("");
@@ -56,15 +58,17 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     setActiveIndex(index);
     setIsPlaying(false);
     setPlayerMessage("");
+    setShouldAutoPlay(shouldPlay);
+  }
 
-    if (!shouldPlay) {
+  useEffect(() => {
+    if (!shouldAutoPlay || activeIndex === null) {
       return;
     }
 
-    setTimeout(() => {
-      void playCurrentTrack();
-    }, 0);
-  }
+    void playCurrentTrack();
+    setShouldAutoPlay(false);
+  }, [activeIndex, shouldAutoPlay]);
 
   async function handlePlayPause() {
     if (!hasTracks) {
