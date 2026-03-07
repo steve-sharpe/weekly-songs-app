@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import PlaylistCards from "@/app/components/playlist-cards";
 import type { PlaylistTrack } from "@/lib/types";
@@ -25,6 +25,8 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isShuffleActive, setIsShuffleActive] = useState(false);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [playerMessage, setPlayerMessage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -38,6 +40,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     }
 
     try {
+      audio.load();
       await audio.play();
       setIsPlaying(true);
       setPlayerMessage("");
@@ -55,15 +58,17 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     setActiveIndex(index);
     setIsPlaying(false);
     setPlayerMessage("");
+    setShouldAutoPlay(shouldPlay);
+  }
 
-    if (!shouldPlay) {
+  useEffect(() => {
+    if (!shouldAutoPlay || activeIndex === null) {
       return;
     }
 
-    setTimeout(() => {
-      void playCurrentTrack();
-    }, 0);
-  }
+    void playCurrentTrack();
+    setShouldAutoPlay(false);
+  }, [activeIndex, shouldAutoPlay]);
 
   async function handlePlayPause() {
     if (!hasTracks) {
@@ -94,6 +99,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
       return;
     }
 
+    setIsShuffleActive(false);
     const nextIndex = activeIndex === null ? 0 : Math.min(activeIndex + 1, tracks.length - 1);
     await selectTrack(nextIndex, true);
   }
@@ -103,6 +109,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
       return;
     }
 
+    setIsShuffleActive(true);
     if (tracks.length === 1) {
       await selectTrack(0, true);
       return;
@@ -121,6 +128,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
       return;
     }
 
+    setIsShuffleActive(false);
     const previousIndex = activeIndex === null ? 0 : Math.max(activeIndex - 1, 0);
     await selectTrack(previousIndex, true);
   }
@@ -185,6 +193,7 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
                   type="button"
                   className={`compact-track-btn ${activeIndex === index ? "compact-track-btn--active" : ""}`}
                   onClick={() => {
+                    setIsShuffleActive(false);
                     void selectTrack(index, true);
                   }}
                 >
@@ -208,6 +217,11 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
               setIsPlaying(false);
             }}
             onEnded={() => {
+              if (isShuffleActive) {
+                void handleShuffle();
+                return;
+              }
+
               void handleNext();
             }}
             onError={() => {
