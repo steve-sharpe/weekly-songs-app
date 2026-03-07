@@ -145,6 +145,97 @@ export async function ensureSchema() {
         )
         ON CONFLICT (key) DO NOTHING;
       `;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS rpg_players (
+          id SERIAL PRIMARY KEY,
+          player_name TEXT NOT NULL,
+          name_key TEXT UNIQUE NOT NULL,
+          level INTEGER NOT NULL DEFAULT 1,
+          xp INTEGER NOT NULL DEFAULT 0,
+          gold INTEGER NOT NULL DEFAULT 20,
+          hp INTEGER NOT NULL DEFAULT 24,
+          max_hp INTEGER NOT NULL DEFAULT 24,
+          attack INTEGER NOT NULL DEFAULT 6,
+          defense INTEGER NOT NULL DEFAULT 3,
+          potions INTEGER NOT NULL DEFAULT 1,
+          turns_left INTEGER NOT NULL DEFAULT 5,
+          last_turns_reset_date DATE NOT NULL DEFAULT CURRENT_DATE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS player_name TEXT;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS name_key TEXT;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS level INTEGER NOT NULL DEFAULT 1;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS gold INTEGER NOT NULL DEFAULT 20;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS hp INTEGER NOT NULL DEFAULT 24;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS max_hp INTEGER NOT NULL DEFAULT 24;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS attack INTEGER NOT NULL DEFAULT 6;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS defense INTEGER NOT NULL DEFAULT 3;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS potions INTEGER NOT NULL DEFAULT 1;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS turns_left INTEGER NOT NULL DEFAULT 5;
+      `;
+
+      await sql`
+        ALTER TABLE rpg_players
+        ADD COLUMN IF NOT EXISTS last_turns_reset_date DATE NOT NULL DEFAULT CURRENT_DATE;
+      `;
+
+      await sql`
+        UPDATE rpg_players
+        SET name_key = LOWER(TRIM(player_name))
+        WHERE name_key IS NULL AND player_name IS NOT NULL;
+      `;
+
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS rpg_players_name_key_unique_idx
+        ON rpg_players(name_key);
+      `;
     })();
   }
 
