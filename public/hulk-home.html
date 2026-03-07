@@ -231,6 +231,31 @@
         .contact-banner { margin: 20px auto 40px auto; display: flex; justify-content: center; width: 100%; }
         .contact-banner .weekly-top-btn { display: block; width: 100%; font-size: 1.8em; }
 
+        .contact-banner {
+            margin: 10px auto 18px auto;
+        }
+
+        .contact-banner .weekly-top-btn {
+            width: auto;
+            max-width: 100%;
+            font-size: 1.2em;
+            padding: 11px 18px;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .video-links {
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .video-links a,
+        .video-links .contact-btn {
+            font-size: 1.02em;
+            padding: 10px 14px;
+            border-width: 3px;
+            box-shadow: 4px 4px 0px #000;
+        }
+
         .paper-section {
             background-color: #e8e8e8;
             background-image:
@@ -575,8 +600,12 @@
             main { padding: 10px; }
             .content-wrap { padding: 0; }
 
-            .video-links { flex-direction: column; width: 100%; gap: 15px; }
-            .video-links a, .contact-btn, .load-more-btn { font-size: 1.2em; padding: 15px; box-shadow: 4px 4px 0px #000; width: 100%; }
+            .contact-banner { margin: 8px auto 12px auto; }
+            .contact-banner .weekly-top-btn { width: auto; font-size: 1em; padding: 9px 12px; }
+
+            .video-links { flex-direction: row; width: 100%; gap: 8px; margin-bottom: 12px; }
+            .video-links a, .video-links .contact-btn { font-size: 0.84em; padding: 8px 10px; box-shadow: 3px 3px 0px #000; width: auto; }
+            .load-more-btn { font-size: 1.2em; padding: 15px; box-shadow: 4px 4px 0px #000; width: 100%; }
             .weekly-feature-link { transform: none; }
             .weekly-feature-link:hover { transform: translate(2px, 2px) scale(1.01); }
             .weekly-feature-link::before { top: -13px; font-size: 0.6em; }
