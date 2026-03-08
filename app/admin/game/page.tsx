@@ -111,7 +111,10 @@ type MusicalGuestSuggestion = {
 type AutoSaveState = "idle" | "pending" | "saving" | "saved" | "error";
 
 const AUTOSAVE_DELAY_MS = 900;
-const MAX_IMAGE_UPLOAD_BYTES = 900 * 1024;
+const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1200;
+const OUTPUT_IMAGE_TYPE = "image/webp";
+const OUTPUT_IMAGE_QUALITY = 0.82;
 
 const FALLBACK_DESIGN: GameDesignConfig = {
   cityName: "St. John's",
@@ -395,18 +398,8 @@ function toImageBackground(photoUrl: string): string {
   return `url("${photoUrl.replace(/"/g, "\\\"")}")`;
 }
 
-function readImageAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
-      reject(new Error("Please upload a valid image file."));
-      return;
-    }
-
-    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-      reject(new Error("Image is too large. Keep file size under 900KB."));
-      return;
-    }
-
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
@@ -420,6 +413,65 @@ function readImageAsDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read the selected image."));
     reader.readAsDataURL(file);
   });
+}
+
+function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to process the selected image."));
+    image.src = dataUrl;
+  });
+}
+
+async function optimizeImageDataUrl(dataUrl: string): Promise<string> {
+  const image = await loadImageFromDataUrl(dataUrl);
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const longestSide = Math.max(sourceWidth, sourceHeight, 1);
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / longestSide);
+  const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return dataUrl;
+  }
+
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+  const optimized = canvas.toDataURL(OUTPUT_IMAGE_TYPE, OUTPUT_IMAGE_QUALITY);
+
+  return optimized || dataUrl;
+}
+
+async function readImageAsDataUrl(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please upload a valid image file.");
+  }
+
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    throw new Error("Image is too large. Keep file size under 5MB.");
+  }
+
+  const dataUrl = await readFileAsDataUrl(file);
+
+  try {
+    return await optimizeImageDataUrl(dataUrl);
+  } catch {
+    return dataUrl;
+  }
+}
+
+function toUploadSuccessMessage(target: "Band" | "Venue"): string {
+  return `${target} photo uploaded and optimized. Save or wait for autosave to persist.`;
+}
+
+function toUploadErrorMessage(target: "band" | "venue"): string {
+  return `Failed to upload ${target} photo.`;
 }
 
 export default function GameAdminDesignerPage() {
@@ -440,6 +492,8 @@ export default function GameAdminDesignerPage() {
   const [simResult, setSimResult] = useState<SimulateNightResult | null>(null);
   const [simulating, setSimulating] = useState(false);
   const [resettingPlayers, setResettingPlayers] = useState(false);
+  const [resettingDesign, setResettingDesign] = useState(false);
+  const [resettingLineup, setResettingLineup] = useState(false);
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDesignRef = useRef<string>(JSON.stringify(FALLBACK_DESIGN));
   const bandCsvInputRef = useRef<HTMLInputElement | null>(null);
@@ -800,9 +854,9 @@ export default function GameAdminDesignerPage() {
     try {
       const photoUrl = await readImageAsDataUrl(file);
       updateBand(index, { photoUrl });
-      setMessage("Band photo uploaded. Save or wait for autosave to persist.");
+      setMessage(toUploadSuccessMessage("Band"));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to upload band photo.");
+      setMessage(error instanceof Error ? error.message : toUploadErrorMessage("band"));
     }
   }
 
@@ -882,9 +936,9 @@ export default function GameAdminDesignerPage() {
     try {
       const photoUrl = await readImageAsDataUrl(file);
       updateVenue(index, { photoUrl });
-      setMessage("Venue photo uploaded. Save or wait for autosave to persist.");
+      setMessage(toUploadSuccessMessage("Venue"));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to upload venue photo.");
+      setMessage(error instanceof Error ? error.message : toUploadErrorMessage("venue"));
     }
   }
 
@@ -1102,6 +1156,100 @@ export default function GameAdminDesignerPage() {
     }
   }
 
+  async function resetDesignToDefaults() {
+    setMessage("");
+    setResettingDesign(true);
+
+    try {
+      const secret = adminSecret.trim();
+      if (!secret) {
+        throw new Error("Enter admin secret first.");
+      }
+
+      if (!window.confirm("Reset the full game design to defaults? This overwrites current custom settings.")) {
+        return;
+      }
+
+      const response = await fetch("/api/admin/game/reset", {
+        method: "POST",
+        headers: {
+          "x-admin-secret": secret,
+        },
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        design?: GameDesignConfig;
+        error?: string;
+      };
+
+      if (!response.ok || !body.ok || !body.design) {
+        throw new Error(body.error || "Failed to reset game design.");
+      }
+
+      setDesign(body.design);
+      setSimVenueId("");
+      setSimBandIds([]);
+      setSimPromoIds([]);
+      setSimResult(null);
+      lastSavedDesignRef.current = JSON.stringify(body.design);
+      setHasLoadedDesign(true);
+      setAutoSaveState("saved");
+      setMessage("Game design reset to defaults (before custom band/venue imports).");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setResettingDesign(false);
+    }
+  }
+
+  async function resetBandsAndVenuesToDefaults() {
+    setMessage("");
+    setResettingLineup(true);
+
+    try {
+      const secret = adminSecret.trim();
+      if (!secret) {
+        throw new Error("Enter admin secret first.");
+      }
+
+      if (!window.confirm("Reset only bands and venues to defaults? Other game settings will stay as-is.")) {
+        return;
+      }
+
+      const response = await fetch("/api/admin/game/reset-lineup", {
+        method: "POST",
+        headers: {
+          "x-admin-secret": secret,
+        },
+      });
+
+      const body = (await response.json()) as {
+        ok?: boolean;
+        design?: GameDesignConfig;
+        error?: string;
+      };
+
+      if (!response.ok || !body.ok || !body.design) {
+        throw new Error(body.error || "Failed to reset bands and venues.");
+      }
+
+      setDesign(body.design);
+      setSimVenueId("");
+      setSimBandIds([]);
+      setSimPromoIds([]);
+      setSimResult(null);
+      lastSavedDesignRef.current = JSON.stringify(body.design);
+      setHasLoadedDesign(true);
+      setAutoSaveState("saved");
+      setMessage("Bands and venues reset to defaults. Other game settings were preserved.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unknown error");
+    } finally {
+      setResettingLineup(false);
+    }
+  }
+
   function exportBandsCsv() {
     const headers = ["id", "stageName", "genre", "draw", "fee", "reliability", "crowdEnergy", "enabled", "photoUrl"];
     const rows = design.bands.map((band) =>
@@ -1278,6 +1426,22 @@ export default function GameAdminDesignerPage() {
             </button>
             <button type="button" className="admin-btn" onClick={saveDesign} disabled={saving}>
               {saving ? "Saving..." : "Save Design"}
+            </button>
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={resetDesignToDefaults}
+              disabled={resettingDesign || resettingLineup || loading || saving}
+            >
+              {resettingDesign ? "Resetting..." : "Reset Game To Defaults"}
+            </button>
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={resetBandsAndVenuesToDefaults}
+              disabled={resettingLineup || resettingDesign || loading || saving}
+            >
+              {resettingLineup ? "Resetting..." : "Reset Bands + Venues Only"}
             </button>
             <Link href="/game" className="admin-btn text-center">
               Open George Street Booking Manager
@@ -2103,7 +2267,7 @@ export default function GameAdminDesignerPage() {
                             }}
                           />
                         </label>
-                        <p className="track-meta mt-1">Image files up to 900KB are stored with this game design.</p>
+                        <p className="track-meta mt-1">Upload up to 5MB. Images are auto-resized and compressed before saving.</p>
                       </div>
                     </div>
 
@@ -2357,7 +2521,7 @@ export default function GameAdminDesignerPage() {
                             }}
                           />
                         </label>
-                        <p className="track-meta mt-1">Image files up to 900KB are stored with this game design.</p>
+                        <p className="track-meta mt-1">Upload up to 5MB. Images are auto-resized and compressed before saving.</p>
                       </div>
                     </div>
 

@@ -479,6 +479,21 @@ export async function saveGameDesign(input: unknown): Promise<GameDesignConfig> 
   return normalized;
 }
 
+export async function resetGameDesignToDefaults(): Promise<GameDesignConfig> {
+  return saveGameDesign({});
+}
+
+export async function resetGameDesignBandsAndVenuesToDefaults(): Promise<GameDesignConfig> {
+  const current = await getGameDesign();
+  const defaults = normalizeGameDesign({});
+
+  return saveGameDesign({
+    ...current,
+    bands: defaults.bands,
+    venues: defaults.venues,
+  });
+}
+
 export async function getMusicalGuestSuggestions(): Promise<MusicalGuestSuggestion[]> {
   await ensureSchema();
   const sql = getSql();
