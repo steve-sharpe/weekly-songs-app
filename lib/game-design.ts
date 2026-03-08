@@ -176,114 +176,6 @@ const DEFAULT_SEASON_SETTINGS: SeasonSettings = {
   winThresholdFanTrust: 55,
 };
 
-const DEFAULT_RIVALS: GameRivalDesign[] = [
-  {
-    id: "the-harbour-howl",
-    stageName: "The Harbour Howl",
-    hometown: "Downtown",
-    genre: "Garage Rock",
-    signatureMove: "Signal Flare Solo",
-    attack: 8,
-    defense: 5,
-    stamina: 28,
-    xpReward: 14,
-    goldReward: 11,
-    enabled: true,
-  },
-  {
-    id: "east-end-echo",
-    stageName: "East End Echo",
-    hometown: "East End",
-    genre: "Alt Pop",
-    signatureMove: "Feedback Bloom",
-    attack: 7,
-    defense: 6,
-    stamina: 30,
-    xpReward: 15,
-    goldReward: 10,
-    enabled: true,
-  },
-  {
-    id: "battery-boys",
-    stageName: "Battery Boys",
-    hometown: "Signal Hill",
-    genre: "Punk",
-    signatureMove: "Breakwater Blitz",
-    attack: 9,
-    defense: 4,
-    stamina: 26,
-    xpReward: 16,
-    goldReward: 12,
-    enabled: true,
-  },
-  {
-    id: "quidi-vibe",
-    stageName: "Quidi Vibe",
-    hometown: "Quidi Vidi",
-    genre: "Indie Rock",
-    signatureMove: "Fogbank Crescendo",
-    attack: 8,
-    defense: 7,
-    stamina: 31,
-    xpReward: 17,
-    goldReward: 13,
-    enabled: true,
-  },
-];
-
-const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
-  {
-    id: "alley-room",
-    name: "Alley Room",
-    photoUrl: "",
-    capacity: 80,
-    baseRent: 30,
-    prestige: 1,
-    genreAffinity: { punk: 0.2, rock: 0.15 },
-    enabled: true,
-  },
-  {
-    id: "harbour-hall",
-    name: "Harbour Hall",
-    photoUrl: "",
-    capacity: 180,
-    baseRent: 70,
-    prestige: 2,
-    genreAffinity: { rock: 0.18, indie: 0.12 },
-    enabled: true,
-  },
-  {
-    id: "downtown-electric",
-    name: "Downtown Electric",
-    photoUrl: "",
-    capacity: 260,
-    baseRent: 110,
-    prestige: 3,
-    genreAffinity: { alt: 0.2, pop: 0.1, indie: 0.1 },
-    enabled: true,
-  },
-  {
-    id: "quidi-stage",
-    name: "Quidi Stage",
-    photoUrl: "",
-    capacity: 420,
-    baseRent: 180,
-    prestige: 4,
-    genreAffinity: { rock: 0.15, folk: 0.12, indie: 0.15 },
-    enabled: true,
-  },
-  {
-    id: "signal-dome",
-    name: "Signal Dome",
-    photoUrl: "",
-    capacity: 520,
-    baseRent: 220,
-    prestige: 5,
-    genreAffinity: { rock: 0.12, pop: 0.12, alt: 0.12 },
-    enabled: true,
-  },
-];
-
 const DEFAULT_PROMO_PACKAGES: BookingPromoPackage[] = [
   { id: "posters", label: "Posters", cost: 10, attendanceBoost: 0.06 },
   { id: "social-boost", label: "Social Boost", cost: 20, attendanceBoost: 0.12 },
@@ -371,12 +263,12 @@ function normalizeRival(input: unknown, index: number): GameRivalDesign {
 
 function normalizeRivals(input: unknown): GameRivalDesign[] {
   if (!Array.isArray(input)) {
-    return DEFAULT_RIVALS;
+    return [];
   }
 
   const rivals = input.slice(0, MAX_RIVALS).map((rival, index) => normalizeRival(rival, index));
   if (!rivals.length) {
-    return DEFAULT_RIVALS;
+    return [];
   }
 
   const used = new Set<string>();
@@ -412,10 +304,6 @@ export function normalizeGameDesign(input: unknown): GameDesignConfig {
     (source as { seasonSettings?: unknown }).seasonSettings,
   );
 
-  const fallbackVenues = DEFAULT_BOOKING_VENUES.map((venue) => ({
-    ...venue,
-    genreAffinity: { ...venue.genreAffinity },
-  }));
   const fallbackPromos = DEFAULT_PROMO_PACKAGES.map((promo) => ({ ...promo }));
 
   return {
@@ -425,7 +313,7 @@ export function normalizeGameDesign(input: unknown): GameDesignConfig {
     jamOffLine: normalizeText(source.jamOffLine, DEFAULT_JAM_OFF_LINE, 220),
     rivals: normalizeRivals(source.rivals),
     bands: bandsFromInput,
-    venues: venuesFromInput.length ? venuesFromInput : fallbackVenues,
+    venues: venuesFromInput,
     promoPackages: promosFromInput.length ? promosFromInput : fallbackPromos,
     sceneEvents: sceneEventsFromInput,
     featuredGuestBonus,
@@ -675,16 +563,11 @@ export function getBookingGameOptions(design: GameDesignConfig): BookingGameOpti
 
   const bands = configuredBands.length ? configuredBands : fallbackBands;
 
-  const fallbackVenues = DEFAULT_BOOKING_VENUES.filter((venue) => venue.enabled).map((venue) => ({
-    ...venue,
-    genreAffinity: { ...venue.genreAffinity },
-  }));
-
   const fallbackPromos = DEFAULT_PROMO_PACKAGES.map((promo) => ({ ...promo }));
 
   return {
     bands: bands.length ? bands : fallbackBands,
-    venues: configuredVenues.length ? configuredVenues : fallbackVenues,
+    venues: configuredVenues,
     promoPackages: configuredPromos.length ? configuredPromos : fallbackPromos,
   };
 }
