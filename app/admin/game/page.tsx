@@ -1271,7 +1271,7 @@ export default function GameAdminDesignerPage() {
     URL.revokeObjectURL(url);
   }
 
-  function importBandsCsv(text: string) {
+  async function importBandsCsv(text: string) {
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length <= 1) {
       setMessage("Bands CSV was empty or missing data rows.");
@@ -1294,20 +1294,37 @@ export default function GameAdminDesignerPage() {
       } satisfies BookingBandDesign;
     });
 
-    setDesign((prev) => ({
-      ...prev,
+    const nextDesign: GameDesignConfig = {
+      ...design,
       bands: imported,
-    }));
+    };
+
+    setDesign(nextDesign);
     setHasLoadedDesign(true);
-    setAutoSaveState(adminSecret.trim() ? "pending" : "idle");
-    setMessage(
-      adminSecret.trim()
-        ? "Bands imported. Autosave will persist the changes shortly."
-        : "Bands imported locally. Enter admin secret and save to persist.",
-    );
+    const secret = adminSecret.trim();
+
+    if (!secret) {
+      setAutoSaveState("idle");
+      setMessage("Bands imported locally. Enter admin secret and save to persist.");
+      return;
+    }
+
+    setAutoSaveState("saving");
+
+    try {
+      const savedDesign = await saveDesignRequest(nextDesign, secret);
+      setDesign(savedDesign);
+      lastSavedDesignRef.current = JSON.stringify(savedDesign);
+      setAutoSaveState("saved");
+      setMessage("Bands imported and saved.");
+    } catch (error) {
+      setAutoSaveState("error");
+      const messageText = error instanceof Error ? error.message : "Unknown save error.";
+      setMessage(`Bands imported locally, but save failed: ${messageText}`);
+    }
   }
 
-  function importVenuesCsv(text: string) {
+  async function importVenuesCsv(text: string) {
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length <= 1) {
       setMessage("Venues CSV was empty or missing data rows.");
@@ -1345,17 +1362,34 @@ export default function GameAdminDesignerPage() {
       } satisfies BookingVenueDesign;
     });
 
-    setDesign((prev) => ({
-      ...prev,
+    const nextDesign: GameDesignConfig = {
+      ...design,
       venues: imported,
-    }));
+    };
+
+    setDesign(nextDesign);
     setHasLoadedDesign(true);
-    setAutoSaveState(adminSecret.trim() ? "pending" : "idle");
-    setMessage(
-      adminSecret.trim()
-        ? "Venues imported. Autosave will persist the changes shortly."
-        : "Venues imported locally. Enter admin secret and save to persist.",
-    );
+    const secret = adminSecret.trim();
+
+    if (!secret) {
+      setAutoSaveState("idle");
+      setMessage("Venues imported locally. Enter admin secret and save to persist.");
+      return;
+    }
+
+    setAutoSaveState("saving");
+
+    try {
+      const savedDesign = await saveDesignRequest(nextDesign, secret);
+      setDesign(savedDesign);
+      lastSavedDesignRef.current = JSON.stringify(savedDesign);
+      setAutoSaveState("saved");
+      setMessage("Venues imported and saved.");
+    } catch (error) {
+      setAutoSaveState("error");
+      const messageText = error instanceof Error ? error.message : "Unknown save error.";
+      setMessage(`Venues imported locally, but save failed: ${messageText}`);
+    }
   }
 
   function cloneBandTemplate() {
@@ -1470,7 +1504,7 @@ export default function GameAdminDesignerPage() {
               }
 
               const text = await file.text();
-              importBandsCsv(text);
+              await importBandsCsv(text);
               event.target.value = "";
             }}
           />
@@ -1487,7 +1521,7 @@ export default function GameAdminDesignerPage() {
               }
 
               const text = await file.text();
-              importVenuesCsv(text);
+              await importVenuesCsv(text);
               event.target.value = "";
             }}
           />
