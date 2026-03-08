@@ -735,8 +735,8 @@ export async function performGameAction(
     }
 
     const bookedBands = findBands(options, selectedBandIds);
-    if (bookedBands.length < MAX_BANDS_PER_SHOW) {
-      throw new Error(`Book ${MAX_BANDS_PER_SHOW} bands before running the show.`);
+    if (!bookedBands.length) {
+      throw new Error("Book at least one band before running the show.");
     }
 
     const promos = findPromos(options, selectedPromoIds);

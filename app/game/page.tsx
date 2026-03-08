@@ -178,8 +178,8 @@ export default function GamePage() {
       missing.push("choose a venue");
     }
 
-    if (selectedBands.length < MAX_BANDS_PER_SHOW) {
-      missing.push(`book ${MAX_BANDS_PER_SHOW} bands`);
+    if (selectedBands.length === 0) {
+      missing.push("book at least one band");
     }
 
     return missing;
@@ -568,7 +568,7 @@ export default function GamePage() {
                 <h3 className="track-title">Turn Checklist</h3>
                 <ul className="mt-2 space-y-1 text-sm">
                   <li>1) Choose exactly one venue.</li>
-                  <li>2) Book all 3 bands for the lineup.</li>
+                  <li>2) Book 1 to 3 bands for the lineup.</li>
                   <li>3) Add optional promo packages, then run the show.</li>
                 </ul>
                 <p className="track-meta mt-3">
