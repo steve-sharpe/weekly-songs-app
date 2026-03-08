@@ -473,6 +473,7 @@ export default function GameAdminDesignerPage() {
   const [resettingPlayers, setResettingPlayers] = useState(false);
   const [resettingDesign, setResettingDesign] = useState(false);
   const [resettingLineup, setResettingLineup] = useState(false);
+  const designRef = useRef<GameDesignConfig>(FALLBACK_DESIGN);
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDesignRef = useRef<string>(JSON.stringify(FALLBACK_DESIGN));
   const bandCsvInputRef = useRef<HTMLInputElement | null>(null);
@@ -484,6 +485,10 @@ export default function GameAdminDesignerPage() {
       setAdminSecret(saved);
     }
   }, []);
+
+  useEffect(() => {
+    designRef.current = design;
+  }, [design]);
 
   const activeRivalCount = useMemo(
     () => design.rivals.filter((rival) => rival.enabled).length,
@@ -545,13 +550,12 @@ export default function GameAdminDesignerPage() {
     return body.design;
   }, []);
 
-  async function loadDesign(event?: FormEvent) {
-    event?.preventDefault();
+  const loadDesignBySecret = useCallback(async (secretInput: string, successMessage: string) => {
     setMessage("");
     setLoading(true);
 
     try {
-      const secret = adminSecret.trim();
+      const secret = secretInput.trim();
       if (!secret) {
         throw new Error("Enter admin secret first.");
       }
@@ -579,14 +583,28 @@ export default function GameAdminDesignerPage() {
       lastSavedDesignRef.current = JSON.stringify(body.design);
       setHasLoadedDesign(true);
       setAutoSaveState("saved");
-      setMessage("Game design loaded.");
+      setMessage(successMessage);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unknown error");
       setAutoSaveState("error");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  async function loadDesign(event?: FormEvent) {
+    event?.preventDefault();
+    await loadDesignBySecret(adminSecret, "Game design loaded.");
   }
+
+  useEffect(() => {
+    const savedSecret = window.localStorage.getItem("admin_secret")?.trim() ?? "";
+    if (!savedSecret) {
+      return;
+    }
+
+    void loadDesignBySecret(savedSecret, "Game design loaded from saved admin session.");
+  }, [loadDesignBySecret]);
 
   const saveDesign = useCallback(async () => {
     setMessage("");
@@ -1295,7 +1313,7 @@ export default function GameAdminDesignerPage() {
     });
 
     const nextDesign: GameDesignConfig = {
-      ...design,
+      ...designRef.current,
       bands: imported,
     };
 
@@ -1363,7 +1381,7 @@ export default function GameAdminDesignerPage() {
     });
 
     const nextDesign: GameDesignConfig = {
-      ...design,
+      ...designRef.current,
       venues: imported,
     };
 
