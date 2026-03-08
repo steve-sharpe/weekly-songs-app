@@ -3,6 +3,7 @@ import { ensureSchema, getSql } from "@/lib/db";
 const GAME_DESIGN_SETTING_KEY = "game_design_v1";
 
 const MAX_RIVALS = 48;
+const MAX_PHOTO_URL_LENGTH = 1_500_000;
 const DEFAULT_CITY_NAME = "St. John's";
 const DEFAULT_TITLE_GOAL = "Biggest Rock Star in St. John's";
 const DEFAULT_INTRO_LINE =
@@ -74,6 +75,7 @@ export type BookingBandDesign = {
   id: string;
   stageName: string;
   genre: string;
+  photoUrl: string;
   draw: number;
   fee: number;
   reliability: number;
@@ -84,6 +86,7 @@ export type BookingBandDesign = {
 export type BookingVenueDesign = {
   id: string;
   name: string;
+  photoUrl: string;
   capacity: number;
   baseRent: number;
   prestige: number;
@@ -232,6 +235,7 @@ const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
   {
     id: "alley-room",
     name: "Alley Room",
+    photoUrl: "",
     capacity: 80,
     baseRent: 30,
     prestige: 1,
@@ -241,6 +245,7 @@ const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
   {
     id: "harbour-hall",
     name: "Harbour Hall",
+    photoUrl: "",
     capacity: 180,
     baseRent: 70,
     prestige: 2,
@@ -250,6 +255,7 @@ const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
   {
     id: "downtown-electric",
     name: "Downtown Electric",
+    photoUrl: "",
     capacity: 260,
     baseRent: 110,
     prestige: 3,
@@ -259,6 +265,7 @@ const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
   {
     id: "quidi-stage",
     name: "Quidi Stage",
+    photoUrl: "",
     capacity: 420,
     baseRent: 180,
     prestige: 4,
@@ -268,6 +275,7 @@ const DEFAULT_BOOKING_VENUES: BookingVenueDesign[] = [
   {
     id: "signal-dome",
     name: "Signal Dome",
+    photoUrl: "",
     capacity: 520,
     baseRent: 220,
     prestige: 5,
@@ -507,6 +515,7 @@ function getBandsFromRivals(design: GameDesignConfig): BookingBandDesign[] {
     id: rival.id || `band-${index + 1}`,
     stageName: rival.stageName,
     genre: rival.genre,
+    photoUrl: "",
     draw: clamp(20 + rival.attack * 6 + rival.defense * 2, 20, 140),
     fee: clamp(20 + rival.xpReward * 2, 20, 220),
     reliability: clamp(58 + rival.defense * 4, 55, 95),
@@ -530,6 +539,7 @@ function normalizeBandsFromUnknown(input: unknown): BookingBandDesign[] {
         id: normalizeText(band.id, toRivalId(stageName, index), 48),
         stageName,
         genre: normalizeText(band.genre, "Rock", 48),
+        photoUrl: normalizeText(band.photoUrl, "", MAX_PHOTO_URL_LENGTH),
         draw: normalizeNumber(band.draw, 60, 20, 220),
         fee: normalizeNumber(band.fee, 70, 10, 400),
         reliability: normalizeNumber(band.reliability, 72, 40, 99),
@@ -553,6 +563,7 @@ function normalizeVenuesFromUnknown(input: unknown): BookingVenueDesign[] {
       return {
         id: normalizeText(venue.id, toRivalId(name, index), 48),
         name,
+        photoUrl: normalizeText(venue.photoUrl, "", MAX_PHOTO_URL_LENGTH),
         capacity: normalizeNumber(venue.capacity, 180, 40, 2000),
         baseRent: normalizeNumber(venue.baseRent, 80, 0, 1200),
         prestige: normalizeNumber(venue.prestige, 2, 1, 8),

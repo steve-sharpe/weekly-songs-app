@@ -21,6 +21,7 @@ type GameBandOption = {
   id: string;
   stageName: string;
   genre: string;
+  photoUrl: string;
   draw: number;
   fee: number;
   reliability: number;
@@ -31,6 +32,7 @@ type GameBandOption = {
 type GameVenueOption = {
   id: string;
   name: string;
+  photoUrl: string;
   capacity: number;
   baseRent: number;
   prestige: number;
@@ -105,6 +107,10 @@ const PLAYER_STORAGE_KEY = "hulk_booking_player_name";
 
 function formatSignedValue(value: number): string {
   return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+function toImageBackground(photoUrl: string): string {
+  return `url("${photoUrl.replace(/"/g, "\\\"")}")`;
 }
 
 function getGenreFitBonus(venue: GameVenueOption | null, genre: string): number {
@@ -526,6 +532,12 @@ export default function GamePage() {
                           active ? "bg-yellow-300" : "bg-white"
                         } disabled:opacity-60`}
                       >
+                        {venue.photoUrl ? (
+                          <div
+                            className="mb-2 h-24 w-full rounded border border-black bg-cover bg-center"
+                            style={{ backgroundImage: toImageBackground(venue.photoUrl) }}
+                          />
+                        ) : null}
                         <p className="font-bold uppercase">{venue.name}</p>
                         <p className="text-sm">Capacity: {venue.capacity}</p>
                         <p className="text-sm">Rent: ${venue.baseRent}</p>
@@ -553,6 +565,12 @@ export default function GamePage() {
                           active ? "bg-green-300" : "bg-white"
                         } disabled:opacity-60`}
                       >
+                        {band.photoUrl ? (
+                          <div
+                            className="mb-2 h-24 w-full rounded border border-black bg-cover bg-center"
+                            style={{ backgroundImage: toImageBackground(band.photoUrl) }}
+                          />
+                        ) : null}
                         <p className="font-bold uppercase">{band.stageName}</p>
                         <p className="text-sm">Genre: {band.genre}</p>
                         <p className="text-sm">Draw: {band.draw}</p>

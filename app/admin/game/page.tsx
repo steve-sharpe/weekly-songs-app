@@ -21,6 +21,7 @@ type BookingBandDesign = {
   id: string;
   stageName: string;
   genre: string;
+  photoUrl: string;
   draw: number;
   fee: number;
   reliability: number;
@@ -31,6 +32,7 @@ type BookingBandDesign = {
 type BookingVenueDesign = {
   id: string;
   name: string;
+  photoUrl: string;
   capacity: number;
   baseRent: number;
   prestige: number;
@@ -109,6 +111,7 @@ type MusicalGuestSuggestion = {
 type AutoSaveState = "idle" | "pending" | "saving" | "saved" | "error";
 
 const AUTOSAVE_DELAY_MS = 900;
+const MAX_IMAGE_UPLOAD_BYTES = 900 * 1024;
 
 const FALLBACK_DESIGN: GameDesignConfig = {
   cityName: "St. John's",
@@ -121,6 +124,7 @@ const FALLBACK_DESIGN: GameDesignConfig = {
     {
       id: "alley-room",
       name: "Alley Room",
+      photoUrl: "",
       capacity: 80,
       baseRent: 30,
       prestige: 1,
@@ -130,6 +134,7 @@ const FALLBACK_DESIGN: GameDesignConfig = {
     {
       id: "harbour-hall",
       name: "Harbour Hall",
+      photoUrl: "",
       capacity: 180,
       baseRent: 70,
       prestige: 2,
@@ -263,6 +268,7 @@ function createBandFromRival(rival: GameRivalDesign, index: number): BookingBand
     id: rival.id || `band-${index + 1}`,
     stageName: rival.stageName || `Band ${index + 1}`,
     genre: rival.genre || "Rock",
+    photoUrl: "",
     draw: Math.max(20, Math.min(220, 20 + rival.attack * 6 + rival.defense * 2)),
     fee: Math.max(10, Math.min(400, 20 + rival.xpReward * 2)),
     reliability: Math.max(40, Math.min(99, 58 + rival.defense * 4)),
@@ -276,6 +282,7 @@ function createEmptyBand(index: number): BookingBandDesign {
     id: `band-${index + 1}`,
     stageName: `Band ${index + 1}`,
     genre: "Rock",
+    photoUrl: "",
     draw: 60,
     fee: 70,
     reliability: 72,
@@ -288,6 +295,7 @@ function createEmptyVenue(index: number): BookingVenueDesign {
   return {
     id: `venue-${index + 1}`,
     name: `Venue ${index + 1}`,
+    photoUrl: "",
     capacity: 180,
     baseRent: 80,
     prestige: 2,
@@ -381,6 +389,37 @@ function toNumberError(value: number, min: number, max: number, label: string): 
   }
 
   return null;
+}
+
+function toImageBackground(photoUrl: string): string {
+  return `url("${photoUrl.replace(/"/g, "\\\"")}")`;
+}
+
+function readImageAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Please upload a valid image file."));
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      reject(new Error("Image is too large. Keep file size under 900KB."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        reject(new Error("Could not read the selected image."));
+        return;
+      }
+
+      resolve(result);
+    };
+    reader.onerror = () => reject(new Error("Failed to read the selected image."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function GameAdminDesignerPage() {
@@ -757,6 +796,16 @@ export default function GameAdminDesignerPage() {
     }));
   }
 
+  async function uploadBandPhoto(index: number, file: File) {
+    try {
+      const photoUrl = await readImageAsDataUrl(file);
+      updateBand(index, { photoUrl });
+      setMessage("Band photo uploaded. Save or wait for autosave to persist.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to upload band photo.");
+    }
+  }
+
   function generateBandsFromArtistRoster() {
     setDesign((prev) => ({
       ...prev,
@@ -827,6 +876,16 @@ export default function GameAdminDesignerPage() {
       ...prev,
       venues: [...prev.venues, createEmptyVenue(prev.venues.length)],
     }));
+  }
+
+  async function uploadVenuePhoto(index: number, file: File) {
+    try {
+      const photoUrl = await readImageAsDataUrl(file);
+      updateVenue(index, { photoUrl });
+      setMessage("Venue photo uploaded. Save or wait for autosave to persist.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to upload venue photo.");
+    }
   }
 
   function updatePromo(index: number, patch: Partial<BookingPromoPackage>) {
@@ -1044,9 +1103,9 @@ export default function GameAdminDesignerPage() {
   }
 
   function exportBandsCsv() {
-    const headers = ["id", "stageName", "genre", "draw", "fee", "reliability", "crowdEnergy", "enabled"];
+    const headers = ["id", "stageName", "genre", "draw", "fee", "reliability", "crowdEnergy", "enabled", "photoUrl"];
     const rows = design.bands.map((band) =>
-      [band.id, band.stageName, band.genre, band.draw, band.fee, band.reliability, band.crowdEnergy, band.enabled]
+      [band.id, band.stageName, band.genre, band.draw, band.fee, band.reliability, band.crowdEnergy, band.enabled, band.photoUrl]
         .map((cell) => toCsvCell(cell))
         .join(","),
     );
@@ -1063,13 +1122,13 @@ export default function GameAdminDesignerPage() {
   }
 
   function exportVenuesCsv() {
-    const headers = ["id", "name", "capacity", "baseRent", "prestige", "enabled", "genreAffinity"];
+    const headers = ["id", "name", "capacity", "baseRent", "prestige", "enabled", "genreAffinity", "photoUrl"];
     const rows = design.venues.map((venue) => {
       const affinity = Object.entries(venue.genreAffinity)
         .map(([key, value]) => `${key}:${value}`)
         .join("|");
 
-      return [venue.id, venue.name, venue.capacity, venue.baseRent, venue.prestige, venue.enabled, affinity]
+      return [venue.id, venue.name, venue.capacity, venue.baseRent, venue.prestige, venue.enabled, affinity, venue.photoUrl]
         .map((cell) => toCsvCell(cell))
         .join(",");
     });
@@ -1092,7 +1151,7 @@ export default function GameAdminDesignerPage() {
     }
 
     const imported = lines.slice(1).map((line, index) => {
-      const [id, stageName, genre, draw, fee, reliability, crowdEnergy, enabled] = parseCsvLine(line);
+      const [id, stageName, genre, draw, fee, reliability, crowdEnergy, enabled, photoUrl] = parseCsvLine(line);
 
       return {
         id: (id || `band-${index + 1}`).trim(),
@@ -1103,6 +1162,7 @@ export default function GameAdminDesignerPage() {
         reliability: Number.parseInt(reliability || "72", 10),
         crowdEnergy: Number.parseInt(crowdEnergy || "65", 10),
         enabled: enabled ? enabled.toLowerCase() !== "false" : true,
+        photoUrl: (photoUrl || "").trim(),
       } satisfies BookingBandDesign;
     });
 
@@ -1119,7 +1179,7 @@ export default function GameAdminDesignerPage() {
     }
 
     const imported = lines.slice(1).map((line, index) => {
-      const [id, name, capacity, baseRent, prestige, enabled, genreAffinity] = parseCsvLine(line);
+      const [id, name, capacity, baseRent, prestige, enabled, genreAffinity, photoUrl] = parseCsvLine(line);
 
       const parsedAffinity = (genreAffinity || "")
         .split("|")
@@ -1145,6 +1205,7 @@ export default function GameAdminDesignerPage() {
         prestige: Number.parseInt(prestige || "2", 10),
         enabled: enabled ? enabled.toLowerCase() !== "false" : true,
         genreAffinity: Object.fromEntries(parsedAffinity),
+        photoUrl: (photoUrl || "").trim(),
       } satisfies BookingVenueDesign;
     });
 
@@ -1995,6 +2056,55 @@ export default function GameAdminDesignerPage() {
                           placeholder="Genre"
                         />
                       </div>
+
+                      <div className="sm:col-span-2">
+                        <p className="track-meta mb-1">Band Photo</p>
+                        {band.photoUrl ? (
+                          <div
+                            className="mb-2 h-36 w-full rounded border-2 border-black bg-cover bg-center"
+                            style={{ backgroundImage: toImageBackground(band.photoUrl) }}
+                          />
+                        ) : (
+                          <div className="mb-2 flex h-20 items-center justify-center rounded border border-dashed border-black bg-white text-xs uppercase tracking-wide text-gray-700">
+                            No photo uploaded yet
+                          </div>
+                        )}
+
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                          <input
+                            value={band.photoUrl}
+                            onChange={(event) => updateBand(index, { photoUrl: event.target.value })}
+                            className="admin-input"
+                            placeholder="https://... or uploaded data URL"
+                          />
+                          <button
+                            type="button"
+                            className="admin-btn"
+                            onClick={() => updateBand(index, { photoUrl: "" })}
+                          >
+                            Clear Photo
+                          </button>
+                        </div>
+
+                        <label className="track-meta mt-2 block">
+                          Upload Image File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="admin-input mt-1"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) {
+                                return;
+                              }
+
+                              await uploadBandPhoto(index, file);
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <p className="track-meta mt-1">Image files up to 900KB are stored with this game design.</p>
+                      </div>
                     </div>
 
                     <p className="track-meta">Booking Stats</p>
@@ -2199,6 +2309,55 @@ export default function GameAdminDesignerPage() {
                           placeholder="Venue id"
                         />
                         <p className="track-meta mt-1">Used internally by game data.</p>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <p className="track-meta mb-1">Venue Photo</p>
+                        {venue.photoUrl ? (
+                          <div
+                            className="mb-2 h-36 w-full rounded border-2 border-black bg-cover bg-center"
+                            style={{ backgroundImage: toImageBackground(venue.photoUrl) }}
+                          />
+                        ) : (
+                          <div className="mb-2 flex h-20 items-center justify-center rounded border border-dashed border-black bg-white text-xs uppercase tracking-wide text-gray-700">
+                            No photo uploaded yet
+                          </div>
+                        )}
+
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                          <input
+                            value={venue.photoUrl}
+                            onChange={(event) => updateVenue(index, { photoUrl: event.target.value })}
+                            className="admin-input"
+                            placeholder="https://... or uploaded data URL"
+                          />
+                          <button
+                            type="button"
+                            className="admin-btn"
+                            onClick={() => updateVenue(index, { photoUrl: "" })}
+                          >
+                            Clear Photo
+                          </button>
+                        </div>
+
+                        <label className="track-meta mt-2 block">
+                          Upload Image File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="admin-input mt-1"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) {
+                                return;
+                              }
+
+                              await uploadVenuePhoto(index, file);
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <p className="track-meta mt-1">Image files up to 900KB are stored with this game design.</p>
                       </div>
                     </div>
 
