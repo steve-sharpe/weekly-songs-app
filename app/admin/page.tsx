@@ -467,6 +467,12 @@ export default function AdminTracksPage() {
           <h1 className="panel-title">Admin Track Photos</h1>
           <p className="week-meta">Set a photo URL that stays with each track.</p>
 
+          <div className="mt-4">
+            <a href="/admin/game" className="admin-btn inline-block">
+              Open George Street Booking Manager Designer
+            </a>
+          </div>
+
           <form onSubmit={loadTracks} className="admin-tools mt-6">
             <input
               type="password"

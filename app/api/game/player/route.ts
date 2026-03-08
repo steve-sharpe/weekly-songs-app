@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getOrCreatePlayer, getPlayer } from "@/lib/game";
+import { createOrLoadPlayerState, getPlayerState } from "@/lib/game";
 
 export const runtime = "nodejs";
 
@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Name is required." }, { status: 400 });
     }
 
-    const player = await getPlayer(name);
-    if (!player) {
+    const state = await getPlayerState(name);
+    if (!state) {
       return NextResponse.json({ error: "Player not found." }, { status: 404 });
     }
 
-    return NextResponse.json({ player });
+    return NextResponse.json(state);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as { name?: string };
     const name = body.name ?? "";
 
-    const player = await getOrCreatePlayer(name);
-    return NextResponse.json({ player });
+    const state = await createOrLoadPlayerState(name);
+    return NextResponse.json(state);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 400 });

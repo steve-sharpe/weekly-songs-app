@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { GameAction, performGameAction } from "@/lib/game";
+import { GameAction, GameActionPayload, performGameAction } from "@/lib/game";
 
 export const runtime = "nodejs";
 
-const ALLOWED_ACTIONS: GameAction[] = ["fight", "rest", "buy_potion", "use_potion"];
+const ALLOWED_ACTIONS: GameAction[] = [
+  "choose_venue",
+  "book_band",
+  "set_promo",
+  "run_show",
+];
 
 function isGameAction(value: string): value is GameAction {
   return ALLOWED_ACTIONS.includes(value as GameAction);
@@ -15,6 +20,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       name?: string;
       action?: string;
+      payload?: GameActionPayload;
     };
 
     const name = body.name ?? "";
@@ -28,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid action." }, { status: 400 });
     }
 
-    const result = await performGameAction(name, action);
+    const result = await performGameAction(name, action, body.payload ?? {});
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

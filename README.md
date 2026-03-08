@@ -44,6 +44,11 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Game Design Notes
+
+- Neon Alley Quest Venue/Booking Manager MVP: [docs/neon-alley-venue-manager-mvp.md](docs/neon-alley-venue-manager-mvp.md)
+- George Street Booking Manager Admin Guide: [docs/george-street-booking-manager-admin-guide.md](docs/george-street-booking-manager-admin-guide.md)
+
 ## API Endpoints
 
 - `GET /api/playlist/current` → current (or latest) playlist

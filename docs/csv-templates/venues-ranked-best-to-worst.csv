@@ -1,0 +1,7 @@
+id,name,capacity,baseRent,prestige,enabled,genreAffinity
+venue-01,Venue 01 - Headline Arena,550,280,5,true,rock:0.14|pop:0.12|alt:0.1
+venue-02,Venue 02 - Prime Hall,430,220,4,true,alt:0.15|indie:0.12|rock:0.08
+venue-03,Venue 03 - Electric Room,340,180,4,true,rock:0.16|punk:0.12|indie:0.08
+venue-04,Venue 04 - Downtown Stage,240,120,3,true,indie:0.14|pop:0.1|folk:0.06
+venue-05,Venue 05 - Harbour Club,170,80,2,true,punk:0.14|garage:0.1|rock:0.08
+venue-06,Venue 06 - Alley Room,95,35,1,true,punk:0.16|rock:0.12|indie:0.04

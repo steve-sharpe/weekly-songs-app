@@ -236,6 +236,91 @@ export async function ensureSchema() {
         CREATE UNIQUE INDEX IF NOT EXISTS rpg_players_name_key_unique_idx
         ON rpg_players(name_key);
       `;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS booking_players (
+          id SERIAL PRIMARY KEY,
+          player_name TEXT NOT NULL,
+          name_key TEXT UNIQUE NOT NULL,
+          money INTEGER NOT NULL DEFAULT 300,
+          fame INTEGER NOT NULL DEFAULT 0,
+          scene_cred INTEGER NOT NULL DEFAULT 0,
+          fan_trust INTEGER NOT NULL DEFAULT 50,
+          current_week INTEGER NOT NULL DEFAULT 1,
+          day_in_week INTEGER NOT NULL DEFAULT 1,
+          season_complete BOOLEAN NOT NULL DEFAULT FALSE,
+          selected_venue_id TEXT,
+          selected_band_ids_json TEXT NOT NULL DEFAULT '[]',
+          selected_promo_ids_json TEXT NOT NULL DEFAULT '[]',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS player_name TEXT;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS name_key TEXT;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS money INTEGER NOT NULL DEFAULT 300;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS fame INTEGER NOT NULL DEFAULT 0;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS scene_cred INTEGER NOT NULL DEFAULT 0;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS fan_trust INTEGER NOT NULL DEFAULT 50;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS current_week INTEGER NOT NULL DEFAULT 1;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS day_in_week INTEGER NOT NULL DEFAULT 1;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS season_complete BOOLEAN NOT NULL DEFAULT FALSE;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS selected_venue_id TEXT;
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS selected_band_ids_json TEXT NOT NULL DEFAULT '[]';
+      `;
+
+      await sql`
+        ALTER TABLE booking_players
+        ADD COLUMN IF NOT EXISTS selected_promo_ids_json TEXT NOT NULL DEFAULT '[]';
+      `;
+
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS booking_players_name_key_unique_idx
+        ON booking_players(name_key);
+      `;
     })();
   }
 

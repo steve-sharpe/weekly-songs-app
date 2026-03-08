@@ -1,0 +1,11 @@
+id,stageName,genre,draw,fee,reliability,crowdEnergy,enabled
+band-01,Band 01 - Crownliner,Rock,170,210,90,90,true
+band-02,Band 02 - Mainstage Riot,Alt Rock,160,200,88,86,true
+band-03,Band 03 - Prime Pulse,Indie Rock,145,175,85,82,true
+band-04,Band 04 - Downtown Drive,Pop Rock,130,150,82,78,true
+band-05,Band 05 - Harbour Echo,Indie Pop,115,125,79,73,true
+band-06,Band 06 - Night Circuit,Synth Rock,100,105,76,69,true
+band-07,Band 07 - Quayline Noise,Punk,85,85,73,65,true
+band-08,Band 08 - Alley Sparks,Garage Rock,72,68,70,61,true
+band-09,Band 09 - Late Set Folk,Alt Folk,60,52,67,57,true
+band-10,Band 10 - Open Mic Crew,Rock,50,40,63,52,true
