@@ -1274,6 +1274,7 @@ export default function GameAdminDesignerPage() {
   function importBandsCsv(text: string) {
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length <= 1) {
+      setMessage("Bands CSV was empty or missing data rows.");
       return;
     }
 
@@ -1297,11 +1298,19 @@ export default function GameAdminDesignerPage() {
       ...prev,
       bands: imported,
     }));
+    setHasLoadedDesign(true);
+    setAutoSaveState(adminSecret.trim() ? "pending" : "idle");
+    setMessage(
+      adminSecret.trim()
+        ? "Bands imported. Autosave will persist the changes shortly."
+        : "Bands imported locally. Enter admin secret and save to persist.",
+    );
   }
 
   function importVenuesCsv(text: string) {
     const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length <= 1) {
+      setMessage("Venues CSV was empty or missing data rows.");
       return;
     }
 
@@ -1340,6 +1349,13 @@ export default function GameAdminDesignerPage() {
       ...prev,
       venues: imported,
     }));
+    setHasLoadedDesign(true);
+    setAutoSaveState(adminSecret.trim() ? "pending" : "idle");
+    setMessage(
+      adminSecret.trim()
+        ? "Venues imported. Autosave will persist the changes shortly."
+        : "Venues imported locally. Enter admin secret and save to persist.",
+    );
   }
 
   function cloneBandTemplate() {
