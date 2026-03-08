@@ -5,17 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Hulk Caesar Show</title>
 <link rel="icon" type="image/png" href="favicon.png">
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YB504H4P8Q"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-YB504H4P8Q');
-    </script>
+        <script>
+            // Defer analytics boot so main content paints first.
+            function loadAnalytics() {
+                if (navigator.doNotTrack === '1') {
+                    return;
+                }
+
+                var analyticsScript = document.createElement('script');
+                analyticsScript.async = true;
+                analyticsScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-YB504H4P8Q';
+                document.head.appendChild(analyticsScript);
+
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){window.dataLayer.push(arguments);}
+                window.gtag = gtag;
+                gtag('js', new Date());
+                gtag('config', 'G-YB504H4P8Q');
+            }
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadAnalytics, { timeout: 2000 });
+            } else {
+                window.addEventListener('load', loadAnalytics, { once: true });
+            }
+        </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap" rel="stylesheet">
+        <link rel="dns-prefetch" href="https://i.ytimg.com">
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap">
+        <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+        <noscript><link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap" rel="stylesheet"></noscript>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; }
@@ -56,7 +77,6 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
             pointer-events: none;
             z-index: 9999;
-            animation: staticFlicker 0.2s infinite;
         }
 
         @keyframes staticFlicker {
@@ -109,7 +129,7 @@
         .marquee-content {
             display: inline-block;
             white-space: nowrap;
-            animation: scrollText 20s linear infinite;
+            animation: scrollText 32s linear infinite;
         }
 
         @keyframes scrollText {
@@ -117,7 +137,7 @@
             100% { transform: translateX(-50%); }
         }
 
-        .flash-hazard { animation: hazardFlash 0.4s infinite; }
+        .flash-hazard { animation: hazardFlash 1.2s infinite; }
 
         @keyframes hazardFlash {
             0%, 49% { color: #e52b20; text-shadow: 2px 2px 0 #000; }
@@ -353,6 +373,8 @@
             position: relative;
             transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.2s ease;
             width: 100%;
+            content-visibility: auto;
+            contain-intrinsic-size: 420px;
         }
 
         .video-card::before {
@@ -452,6 +474,7 @@
             border-radius: 8px;
             overflow: hidden;
             background: #000;
+            aspect-ratio: 16 / 9;
         }
 
         .video-screen::before {
@@ -482,7 +505,7 @@
 
         .video-thumbnail {
             width: 100%;
-            aspect-ratio: 16/9;
+            height: 100%;
             object-fit: cover;
             border: none;
             filter: contrast(110%) saturate(120%);
@@ -619,6 +642,19 @@
             .submit-btn, .cancel-btn { font-size: 1.1em; box-shadow: 3px 3px 0px #111; }
             .floating-top-btn { right: 7px; font-size: 0.9em; padding: 6px 8px; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+
+            .site-wrapper::after {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -697,13 +733,10 @@
         </main>
     </div>
 
-    <div id="fb-root"></div>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v10.0"></script>
-
     <script>
         const YOUTUBE_FEED_ENDPOINT = '/api/youtube/videos';
         const TITLE_OVERRIDES_KEY = 'hulkShowVideoTitleOverrides';
-        const EPISODE_BATCH_SIZE = 30;
+        const EPISODE_BATCH_SIZE = 12;
         const videoGrid = document.getElementById('videoGrid');
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         let nextPageToken = '';
@@ -788,16 +821,23 @@
 
                         const videoId = item.id.videoId;
                         const title = titleOverrides[videoId] || item.snippet.title;
-                        const thumbnailUrl = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
+                        // Prefer known 16:9 YouTube thumbnail URL to keep previews consistent.
+                        const thumbnailUrl = item.snippet.thumbnails.medium
+                            ? item.snippet.thumbnails.medium.url
+                            : `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
                         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                        const isLatest = !pageToken && latestVideoId && videoId === latestVideoId;
+                        const loadingMode = isLatest ? 'eager' : 'lazy';
+                        const fetchPriority = isLatest ? 'high' : 'low';
 
                         const card = document.createElement('a');
                         card.className = 'video-card glitchable';
-                        if (!pageToken && latestVideoId && videoId === latestVideoId) {
+                        if (isLatest) {
                             card.classList.add('video-card--latest');
                         }
                         card.href = videoUrl;
                         card.target = "_blank";
+                        card.rel = 'noopener noreferrer';
 
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = title;
@@ -814,7 +854,7 @@
                         card.innerHTML = `
                             <div class="video-tv">
                                 <div class="video-screen">
-                                    <img class="video-thumbnail" src="${thumbnailUrl}" alt="${cleanTitle}">
+                                    <img class="video-thumbnail" src="${thumbnailUrl}" alt="${cleanTitle}" loading="${loadingMode}" decoding="async" width="480" height="270" fetchpriority="${fetchPriority}">
                                 </div>
                             </div>
                             <h4 class="video-title">${cleanTitle}</h4>

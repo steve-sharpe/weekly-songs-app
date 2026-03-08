@@ -21,6 +21,17 @@ const STARTING_MONEY = 300;
 const STARTING_FAME = 0;
 const STARTING_SCENE_CRED = 0;
 const STARTING_FAN_TRUST = 50;
+const DESIGN_OPTIONS_CACHE_TTL_MS = 15000;
+
+type DesignOptionsCache = {
+  expiresAt: number;
+  value: {
+    design: GameDesignConfig;
+    options: BookingGameOptions;
+  };
+};
+
+let designOptionsCache: DesignOptionsCache | null = null;
 
 type PlayerRow = {
   id: number;
@@ -476,10 +487,21 @@ async function fetchArtistWatchLinks(artistNames: string[]): Promise<WatchCtaLin
 }
 
 async function getDesignAndOptions(): Promise<{ design: GameDesignConfig; options: BookingGameOptions }> {
+  const now = Date.now();
+  if (designOptionsCache && designOptionsCache.expiresAt > now) {
+    return designOptionsCache.value;
+  }
+
   const design = await getGameDesign();
   const options = getBookingGameOptions(design);
+  const value = { design, options };
 
-  return { design, options };
+  designOptionsCache = {
+    expiresAt: now + DESIGN_OPTIONS_CACHE_TTL_MS,
+    value,
+  };
+
+  return value;
 }
 
 export async function getOrCreatePlayer(nameInput: string): Promise<GamePlayer> {

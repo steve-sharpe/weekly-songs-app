@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 
 const DEFAULT_MAX_RESULTS = 30;
 const DEFAULT_CHANNEL_ID = "UCZRZtepB5V06Ya5VAC66XpA";
+const YOUTUBE_REVALIDATE_SECONDS = 300;
 
 type VideoItem = {
   id: { videoId: string };
@@ -71,7 +72,7 @@ async function fetchByYoutubeDataApi(
   const response = await fetch(
     `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
     {
-      cache: "no-store",
+      next: { revalidate: YOUTUBE_REVALIDATE_SECONDS },
       headers: {
         "User-Agent": "weekly-songs-app/1.0",
       },
@@ -101,7 +102,7 @@ async function fetchByYoutubeRss(
 ) {
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
   const response = await fetch(feedUrl, {
-    cache: "no-store",
+    next: { revalidate: YOUTUBE_REVALIDATE_SECONDS },
     headers: {
       "User-Agent": "weekly-songs-app/1.0",
     },
@@ -169,10 +170,17 @@ export async function GET(request: Request) {
       result = await fetchByYoutubeRss(channelId, maxResults, pageToken);
     }
 
-    return NextResponse.json({
-      items: result.items,
-      nextPageToken: result.nextPageToken,
-    });
+    return NextResponse.json(
+      {
+        items: result.items,
+        nextPageToken: result.nextPageToken,
+      },
+      {
+        headers: {
+          "Cache-Control": `public, s-maxage=${YOUTUBE_REVALIDATE_SECONDS}, stale-while-revalidate=86400`,
+        },
+      },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(

@@ -104,6 +104,7 @@ type TurnRecap = {
 type GameAction = "choose_venue" | "book_band" | "set_promo" | "run_show";
 
 const PLAYER_STORAGE_KEY = "hulk_booking_player_name";
+const MAX_BANDS_PER_SHOW = 3;
 
 function formatSignedValue(value: number): string {
   return `${value >= 0 ? "+" : ""}${value}`;
@@ -288,8 +289,65 @@ export default function GamePage() {
     const selectedBandsBeforeAction = selectedBands;
     const selectedPromosBeforeAction = selectedPromos;
 
-    setActionLoading(true);
+    const lockUi = action === "run_show";
+    if (lockUi) {
+      setActionLoading(true);
+    }
     setMessage("");
+
+    // Optimistic UI for selection actions so cards respond instantly.
+    if (action === "choose_venue") {
+      const venueId = payload.venueId ?? "";
+      if (venueId) {
+        setPlayer((prev) => (prev ? { ...prev, selectedVenueId: venueId } : prev));
+      }
+    }
+
+    if (action === "book_band") {
+      const bandId = payload.bandId ?? "";
+      if (bandId) {
+        const currentlySelected = player.selectedBandIds.includes(bandId);
+        if (!currentlySelected && player.selectedBandIds.length >= MAX_BANDS_PER_SHOW) {
+          setMessage(`You can book up to ${MAX_BANDS_PER_SHOW} bands per show.`);
+          return;
+        }
+
+        setPlayer((prev) => {
+          if (!prev) {
+            return prev;
+          }
+
+          const nextIds = prev.selectedBandIds.includes(bandId)
+            ? prev.selectedBandIds.filter((id) => id !== bandId)
+            : [...prev.selectedBandIds, bandId];
+
+          return {
+            ...prev,
+            selectedBandIds: nextIds,
+          };
+        });
+      }
+    }
+
+    if (action === "set_promo") {
+      const promoId = payload.promoId ?? "";
+      if (promoId) {
+        setPlayer((prev) => {
+          if (!prev) {
+            return prev;
+          }
+
+          const nextIds = prev.selectedPromoIds.includes(promoId)
+            ? prev.selectedPromoIds.filter((id) => id !== promoId)
+            : [...prev.selectedPromoIds, promoId];
+
+          return {
+            ...prev,
+            selectedPromoIds: nextIds,
+          };
+        });
+      }
+    }
 
     try {
       const response = await fetch("/api/game/action", {
@@ -431,9 +489,13 @@ export default function GamePage() {
         setLogLines((prev) => [...body.lines!, ...prev].slice(0, 10));
       }
     } catch (error) {
+      // Re-sync player from server if an optimistic update fails.
+      await loadPlayer(player.name);
       setMessage(error instanceof Error ? error.message : "Unknown error");
     } finally {
-      setActionLoading(false);
+      if (lockUi) {
+        setActionLoading(false);
+      }
     }
   }
 
