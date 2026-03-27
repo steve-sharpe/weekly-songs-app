@@ -49,6 +49,23 @@ Open http://localhost:3000.
 - Neon Alley Quest Venue/Booking Manager MVP: [docs/neon-alley-venue-manager-mvp.md](docs/neon-alley-venue-manager-mvp.md)
 - George Street Booking Manager Admin Guide: [docs/george-street-booking-manager-admin-guide.md](docs/george-street-booking-manager-admin-guide.md)
 
+
+## Pushing Your Code to GitHub
+
+1. Make sure your `.env` file is not committed (it should be in `.gitignore`).
+2. Stage your changes:
+	```bash
+	git add .
+	```
+3. Commit your changes:
+	```bash
+	git commit -m "Describe your changes"
+	```
+4. Push to your remote repository:
+	```bash
+	git push
+	```
+
 ## API Endpoints
 
 - `GET /api/playlist/current` → current (or latest) playlist
