@@ -471,6 +471,12 @@ export default function AdminTracksPage() {
             <a href="/admin/game" className="admin-btn inline-block">
               Open George Street Booking Manager Designer
             </a>
+            <a href="/admin/adventure" className="admin-btn ml-2 inline-block">
+              Open Adventure Game Designer
+            </a>
+            <a href="/game/adventure" className="admin-btn ml-2 inline-block">
+              Open Adventure Game
+            </a>
           </div>
 
           <form onSubmit={loadTracks} className="admin-tools mt-6">
@@ -551,6 +557,7 @@ export default function AdminTracksPage() {
                 </div>
 
                 {track.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={track.photo_url}
                     alt={`${track.track_title ?? track.title} artwork`}

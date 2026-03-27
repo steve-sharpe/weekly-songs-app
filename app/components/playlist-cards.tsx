@@ -176,6 +176,7 @@ export default function PlaylistCards({ tracks }: PlaylistCardsProps) {
             }}
           >
             {track.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={track.photoUrl}
                 alt={`${track.trackTitle} artwork`}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import SongsViewSwitcher from "@/app/components/songs-view-switcher";
 import { ensureSchema, getSql } from "@/lib/db";
@@ -73,9 +74,9 @@ export default async function HiddenAllSongsPage() {
     <div className="comic-bg min-h-screen px-4 py-8 sm:px-8">
       <main className="mx-auto max-w-6xl">
         <div className="weekly-nav-row mb-3">
-          <a href="/" className="weekly-back-btn">
+          <Link href="/" className="weekly-back-btn">
             ← Home
-          </a>
+          </Link>
         </div>
 
         <section className="paper-panel">

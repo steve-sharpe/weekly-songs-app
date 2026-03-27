@@ -505,6 +505,9 @@ export default function GamePage() {
         <Link href="/" className="weekly-back-btn inline-block">
           ← Go Back Home
         </Link>
+        <Link href="/game/adventure" className="weekly-back-btn ml-2 inline-block">
+          Play Promoter Adventure
+        </Link>
 
         <section className="paper-panel mt-4 space-y-6 p-5 sm:p-8">
           <div className="space-y-2 text-center">
@@ -623,21 +626,29 @@ export default function GamePage() {
                         type="button"
                         onClick={() => void runAction("book_band", { bandId: band.id })}
                         disabled={actionLoading || player.seasonComplete}
-                        className={`rounded border-2 border-black p-3 text-left shadow-[4px_4px_0_#000] ${
+                        className={`min-h-[180px] rounded border-2 border-black p-3 text-left shadow-[4px_4px_0_#000] ${
                           active ? "bg-green-300" : "bg-white"
                         } disabled:opacity-60`}
                       >
-                        {band.photoUrl ? (
+                        <div className="grid h-full grid-cols-2 gap-3">
                           <div
-                            className="mb-2 h-24 w-full rounded border border-black bg-cover bg-center"
-                            style={{ backgroundImage: toImageBackground(band.photoUrl) }}
+                            className="h-full min-h-[140px] w-full rounded border border-black bg-center bg-no-repeat"
+                            style={{
+                              backgroundImage: band.photoUrl
+                                ? toImageBackground(band.photoUrl)
+                                : "linear-gradient(135deg, #fbcfe8 0%, #f43f5e 55%, #be185d 100%)",
+                              backgroundSize: band.photoUrl ? "contain" : "cover",
+                              backgroundColor: "#fff",
+                            }}
                           />
-                        ) : null}
-                        <p className="font-bold uppercase">{band.stageName}</p>
-                        <p className="text-sm">Genre: {band.genre}</p>
-                        <p className="text-sm">Draw: {band.draw}</p>
-                        <p className="text-sm">Fee: ${band.fee}</p>
-                        <p className="text-sm">Reliability: {band.reliability}%</p>
+                          <div className="flex flex-col justify-center">
+                            <p className="font-bold uppercase">{band.stageName}</p>
+                            <p className="text-sm">Genre: {band.genre}</p>
+                            <p className="text-sm">Draw: {band.draw}</p>
+                            <p className="text-sm">Fee: ${band.fee}</p>
+                            <p className="text-sm">Reliability: {band.reliability}%</p>
+                          </div>
+                        </div>
                       </button>
                     );
                   })}

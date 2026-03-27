@@ -21,17 +21,6 @@ const STARTING_MONEY = 300;
 const STARTING_FAME = 0;
 const STARTING_SCENE_CRED = 0;
 const STARTING_FAN_TRUST = 50;
-const DESIGN_OPTIONS_CACHE_TTL_MS = 15000;
-
-type DesignOptionsCache = {
-  expiresAt: number;
-  value: {
-    design: GameDesignConfig;
-    options: BookingGameOptions;
-  };
-};
-
-let designOptionsCache: DesignOptionsCache | null = null;
 
 type PlayerRow = {
   id: number;
@@ -134,6 +123,13 @@ type NightOutcome = {
   featuredGuestHit: boolean;
 };
 
+type TrackArtistBandRow = {
+  artist_name: string;
+  track_count: number;
+  genre: string | null;
+  photo_url: string | null;
+};
+
 function normalizeName(name: string): string {
   return name
     .trim()
@@ -143,6 +139,16 @@ function normalizeName(name: string): string {
 
 function toNameKey(name: string): string {
   return normalizeName(name).toLowerCase();
+}
+
+function toBandId(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+  return slug || "artist";
 }
 
 function randomFloat(min: number, max: number): number {
@@ -178,6 +184,106 @@ function parseStringArrayJson(value: string | null | undefined): string[] {
 
 function toArrayJson(value: string[]): string {
   return JSON.stringify(value);
+}
+
+async function getTrackLibraryBands(): Promise<BookingBandDesign[]> {
+  await ensureSchema();
+  const sql = getSql();
+
+  const rows = (await sql`
+    WITH artist_source AS (
+      SELECT
+        LOWER(TRIM(artist_name)) AS artist_key,
+        TRIM(artist_name) AS artist_name,
+        NULLIF(TRIM(genre), '') AS genre,
+        NULLIF(TRIM(photo_url), '') AS photo_url,
+        created_time,
+        id
+      FROM tracks
+      WHERE is_active = TRUE
+        AND artist_name IS NOT NULL
+        AND TRIM(artist_name) <> ''
+    ),
+    artist_rollup AS (
+      SELECT
+        artist_key,
+        COUNT(*)::int AS track_count
+      FROM artist_source
+      GROUP BY artist_key
+    ),
+    latest_artist_name AS (
+      SELECT DISTINCT ON (artist_key)
+        artist_key,
+        artist_name
+      FROM artist_source
+      ORDER BY artist_key, created_time DESC NULLS LAST, id DESC
+    ),
+    latest_genre AS (
+      SELECT DISTINCT ON (artist_key)
+        artist_key,
+        genre
+      FROM artist_source
+      WHERE genre IS NOT NULL
+      ORDER BY artist_key, created_time DESC NULLS LAST, id DESC
+    ),
+    latest_photo AS (
+      SELECT DISTINCT ON (artist_key)
+        artist_key,
+        photo_url
+      FROM artist_source
+      WHERE photo_url IS NOT NULL
+      ORDER BY artist_key, created_time DESC NULLS LAST, id DESC
+    )
+    SELECT
+      latest_artist_name.artist_name,
+      artist_rollup.track_count,
+      latest_genre.genre,
+      latest_photo.photo_url
+    FROM artist_rollup
+    JOIN latest_artist_name
+      ON latest_artist_name.artist_key = artist_rollup.artist_key
+    LEFT JOIN latest_genre
+      ON latest_genre.artist_key = artist_rollup.artist_key
+    LEFT JOIN latest_photo
+      ON latest_photo.artist_key = artist_rollup.artist_key
+    ORDER BY LOWER(latest_artist_name.artist_name) ASC
+    LIMIT 180;
+  `) as TrackArtistBandRow[];
+
+  const usedIds = new Set<string>();
+
+  return rows.map((row, index) => {
+    const trackCount = Number(row.track_count) || 1;
+    const baseId = toBandId(row.artist_name);
+    let id = baseId;
+
+    if (usedIds.has(id)) {
+      id = `${baseId}-${index + 1}`;
+    }
+    usedIds.add(id);
+
+    return {
+      id,
+      stageName: row.artist_name,
+      genre: row.genre?.trim() || "Rock",
+      photoUrl: row.photo_url?.trim() || "",
+      draw: clamp(34 + trackCount * 7, 30, 220),
+      fee: clamp(20 + trackCount * 5, 20, 360),
+      reliability: clamp(62 + Math.min(trackCount, 16), 55, 95),
+      crowdEnergy: clamp(48 + trackCount * 4, 40, 100),
+      enabled: true,
+    } satisfies BookingBandDesign;
+  });
+}
+
+async function getRuntimeBookingOptions(design: GameDesignConfig): Promise<BookingGameOptions> {
+  const options = getBookingGameOptions(design);
+  const trackBands = await getTrackLibraryBands();
+
+  return {
+    ...options,
+    bands: trackBands,
+  };
 }
 
 function mapPlayer(row: PlayerRow): GamePlayer {
@@ -487,21 +593,10 @@ async function fetchArtistWatchLinks(artistNames: string[]): Promise<WatchCtaLin
 }
 
 async function getDesignAndOptions(): Promise<{ design: GameDesignConfig; options: BookingGameOptions }> {
-  const now = Date.now();
-  if (designOptionsCache && designOptionsCache.expiresAt > now) {
-    return designOptionsCache.value;
-  }
-
   const design = await getGameDesign();
-  const options = getBookingGameOptions(design);
-  const value = { design, options };
+  const options = await getRuntimeBookingOptions(design);
 
-  designOptionsCache = {
-    expiresAt: now + DESIGN_OPTIONS_CACHE_TTL_MS,
-    value,
-  };
-
-  return value;
+  return { design, options };
 }
 
 export async function getOrCreatePlayer(nameInput: string): Promise<GamePlayer> {

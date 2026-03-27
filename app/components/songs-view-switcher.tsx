@@ -26,9 +26,9 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShuffleActive, setIsShuffleActive] = useState(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [playerMessage, setPlayerMessage] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayRef = useRef(false);
 
   const hasTracks = useMemo(() => tracks.length > 0, [tracks.length]);
   const activeTrack = activeIndex !== null ? tracks[activeIndex] : null;
@@ -50,6 +50,20 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     }
   }
 
+  async function autoplayCurrentTrackFromEffect() {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    try {
+      audio.load();
+      await audio.play();
+    } catch {
+      // onError/onPause handlers keep UI state in sync.
+    }
+  }
+
   async function selectTrack(index: number, shouldPlay = true) {
     if (!hasTracks || index < 0 || index >= tracks.length) {
       return;
@@ -58,17 +72,17 @@ export default function SongsViewSwitcher({ tracks }: SongsViewSwitcherProps) {
     setActiveIndex(index);
     setIsPlaying(false);
     setPlayerMessage("");
-    setShouldAutoPlay(shouldPlay);
+    shouldAutoPlayRef.current = shouldPlay;
   }
 
   useEffect(() => {
-    if (!shouldAutoPlay || activeIndex === null) {
+    if (!shouldAutoPlayRef.current || activeIndex === null) {
       return;
     }
 
-    void playCurrentTrack();
-    setShouldAutoPlay(false);
-  }, [activeIndex, shouldAutoPlay]);
+    shouldAutoPlayRef.current = false;
+    void autoplayCurrentTrackFromEffect();
+  }, [activeIndex]);
 
   async function handlePlayPause() {
     if (!hasTracks) {
