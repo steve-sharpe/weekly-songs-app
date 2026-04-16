@@ -45,6 +45,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="description" content="The Hulk Caesar Show features local talent, music, and interviews from St. John's, Newfoundland. Watch or listen to weekly episodes with Hulk and guests." />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "PodcastSeries",
+              "name": "The Hulk Caesar Show",
+              "description": "The Hulk Caesar Show features local talent, music, and interviews from St. John's, Newfoundland. Watch or listen to weekly episodes with Hulk and guests.",
+              "url": "https://your-domain.com/",
+              "inLanguage": "en",
+              "publisher": {
+                "@type": "Organization",
+                "name": "The Hulk Caesar Show"
+              }
+            })
+          }}
+        />
+      </head>
       <body
         className={`${bodyFont.variable} ${displayFont.variable} ${hulkTitleFont.variable} ${hulkBodyFont.variable} antialiased`}
       >
