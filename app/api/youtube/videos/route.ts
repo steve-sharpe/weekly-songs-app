@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 
 const DEFAULT_MAX_RESULTS = 30;
 const DEFAULT_CHANNEL_ID = "UCZRZtepB5V06Ya5VAC66XpA";
-const YOUTUBE_REVALIDATE_SECONDS = 300;
+const YOUTUBE_REVALIDATE_SECONDS = 1;
 
 type VideoItem = {
   id: { videoId: string };

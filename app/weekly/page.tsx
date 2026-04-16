@@ -48,24 +48,21 @@ export default async function WeeklyPage() {
       <main className="mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 pt-2 sm:px-8 sm:pt-4">
 
         <section className="paper-panel mt-4">
-          <h2 className="weekly-panel-title">This Week&apos;s 4 Tracks</h2>
-
-          {playlist ? (
-            <>
-              <div className="weekly-subtitle-row">
-                <p className="weekly-subtitle">Select image to play</p>
-              </div>
-
-              <PlaylistCards tracks={playlist.tracks} />
-            </>
-          ) : (
-            <div className="empty-state">
-              <p>No weekly playlist found yet.</p>
-              <p className="mt-2 text-sm">
-                Run sync first, then trigger playlist generation.
-              </p>
-            </div>
-          )}
+          <h2 className="weekly-panel-title">Hulk Caesar Show Jukebox</h2>
+          <div className="weekly-subtitle-row">
+            <p className="weekly-subtitle">Try the new Jukebox for all songs!</p>
+          </div>
+          <div className="flex justify-center mt-6">
+            <a
+              href="https://hcssonglist.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="play-all-btn now-playing-btn text-lg px-8 py-4"
+              style={{ textDecoration: "none" }}
+            >
+              🎵 Open Hulk Caesar Show Jukebox
+            </a>
+          </div>
         </section>
       </main>
     </div>
