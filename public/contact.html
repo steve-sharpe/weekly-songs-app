@@ -51,6 +51,65 @@
       background: #fff;
     }
     textarea { min-height: 160px; resize: vertical; }
+    .section-label {
+      margin: 6px 0 0;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.4rem;
+      text-transform: uppercase;
+      color: #111;
+      text-shadow: 2px 2px 0 #ffeb3b;
+    }
+    .calendar-help {
+      margin: -6px 0 0;
+      font-size: 0.92rem;
+    }
+    .date-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .date-option {
+      position: relative;
+      display: block;
+      border: 3px solid #111;
+      background: linear-gradient(180deg, #fffdf7, #f0eadb);
+      box-shadow: 4px 4px 0 #000;
+      padding: 12px 12px 12px 46px;
+      cursor: pointer;
+      min-height: 76px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .date-option:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 #000;
+      background: #ffeb3b;
+    }
+    .date-option input {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      accent-color: #0050ff;
+    }
+    .date-option strong {
+      display: block;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.08rem;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+    .date-option span {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+    .date-option.is-selected {
+      background: #ffeb3b;
+      box-shadow: 2px 2px 0 #000;
+    }
     .actions { display: flex; gap: 12px; flex-wrap: wrap; }
     .btn {
       display: inline-block;
@@ -84,11 +143,16 @@
 <body>
   <main class="wrap">
     <h1>Contact Us / Booking</h1>
-    <p>Send a booking note, a guest request, or a quick message. This page goes straight to the contact form for QR scans.</p>
+    <p>Send a guest request, choose one or more Friday 7:30 PM slots, or leave a quick message. This page goes straight to the booking form for QR scans.</p>
 
     <form id="contactForm">
       <input type="text" id="name" placeholder="Your Name" required>
       <input type="email" id="email" placeholder="Your Email" required>
+      <div>
+        <div class="section-label">Preferred Friday Slots</div>
+        <p class="calendar-help">Pick as many Fridays at 7:30 PM as work for you. We’ll see the notes in your request.</p>
+        <div id="dateGrid" class="date-grid" aria-label="Preferred Friday dates"></div>
+      </div>
       <textarea id="message" placeholder="Your Message" required></textarea>
       <div class="actions">
         <button class="btn primary" type="submit">Send Message</button>
@@ -104,15 +168,88 @@
     var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xlgwwbld';
     var form = document.getElementById('contactForm');
     var statusBox = document.getElementById('status');
+    var dateGrid = document.getElementById('dateGrid');
+
+    function getNextFridaySlots(count) {
+      var slots = [];
+      var current = new Date();
+      var targetHour = 19;
+      var targetMinute = 30;
+      var dayOfWeek = current.getDay();
+      var daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+
+      if (daysUntilFriday === 0 && (current.getHours() > targetHour || (current.getHours() === targetHour && current.getMinutes() >= targetMinute))) {
+        daysUntilFriday = 7;
+      }
+
+      current.setHours(0, 0, 0, 0);
+      current.setDate(current.getDate() + daysUntilFriday);
+
+      for (var index = 0; index < count; index += 1) {
+        var slotDate = new Date(current);
+        slotDate.setDate(current.getDate() + (index * 7));
+        slotDate.setHours(targetHour, targetMinute, 0, 0);
+        slots.push(slotDate);
+      }
+
+      return slots;
+    }
+
+    function formatSlotLabel(date) {
+      return date.toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    function renderFridaySlots() {
+      var slots = getNextFridaySlots(12);
+
+      dateGrid.innerHTML = slots.map(function(date, index) {
+        var value = date.toISOString();
+        return [
+          '<label class="date-option" data-date-option>',
+          '<input type="checkbox" name="preferredDates" value="' + value + '" id="slot-' + index + '">',
+          '<strong>' + formatSlotLabel(date) + '</strong>',
+          '<span>7:30 PM guest slot</span>',
+          '</label>'
+        ].join('');
+      }).join('');
+
+      dateGrid.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+          var parent = checkbox.closest('.date-option');
+          if (parent) {
+            parent.classList.toggle('is-selected', checkbox.checked);
+          }
+        });
+      });
+    }
+
+    renderFridaySlots();
 
     form.addEventListener('submit', function(event) {
       event.preventDefault();
 
       var submitBtn = form.querySelector('button[type="submit"]');
+      var selectedDates = Array.from(form.querySelectorAll('input[name="preferredDates"]:checked')).map(function(input) {
+        return input.value;
+      });
+
+      if (!selectedDates.length) {
+        statusBox.textContent = 'Please select at least one Friday 7:30 PM slot.';
+        statusBox.style.display = 'block';
+        return;
+      }
+
       var data = new FormData();
       data.append('name', document.getElementById('name').value);
       data.append('email', document.getElementById('email').value);
       data.append('message', document.getElementById('message').value);
+      data.append('preferred_dates', selectedDates.join('\n'));
+      data.append('preferred_dates_count', String(selectedDates.length));
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
@@ -128,11 +265,14 @@
         }
 
         form.reset();
+        dateGrid.querySelectorAll('.date-option').forEach(function(option) {
+          option.classList.remove('is-selected');
+        });
         statusBox.textContent = 'Message sent. Thank you!';
         statusBox.style.display = 'block';
       }).catch(function() {
         window.location.href = 'mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=' + encodeURIComponent(
-          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nMessage: ' + document.getElementById('message').value
+          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nPreferred dates: ' + (selectedDates.length ? selectedDates.join(', ') : 'None selected') + '\nMessage: ' + document.getElementById('message').value
         );
       }).finally(function() {
         submitBtn.disabled = false;
