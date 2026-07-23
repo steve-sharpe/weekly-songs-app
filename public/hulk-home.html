@@ -678,7 +678,7 @@
 					<!-- Jukebox link removed -->
 
                     <div class="video-links">
-                        <button class="contact-btn" id="contactBtn">Contact Us / Booking</button>
+                        <a class="contact-btn" id="contactBtn" href="/contact.html">Contact Us / Booking</a>
                         <a href="https://www.youtube.com/@TheHulkCaesarShow" target="_blank">Watch on YouTube</a>
                         <a href="https://www.facebook.com/hulkcaesar/videos" target="_blank">Watch on Facebook</a>
                         <a href="https://hulkshow.podbean.com/" target="_blank">Audio Podcast</a>
@@ -908,10 +908,27 @@
         var closeBtn = document.getElementById("closeModal");
         var cancelBtn = document.getElementById("cancelBtn");
 
+        function openContactModal() {
+            modal.style.display = "block";
+        }
+
+        function closeContactModal() {
+            modal.style.display = "none";
+        }
+
+        function shouldOpenContactModalFromUrl() {
+            var searchParams = new URLSearchParams(window.location.search);
+            return searchParams.get('contact') === '1' || window.location.hash === '#contact';
+        }
+
         btn.onclick = function(event) {
             if (event.target.tagName.toLowerCase() === 'button') {
-                modal.style.display = "block";
+                openContactModal();
             }
+        }
+
+        if (shouldOpenContactModalFromUrl()) {
+            openContactModal();
         }
 
         var floatingTopBtn = document.getElementById("floatingTopBtn");
@@ -921,10 +938,10 @@
             });
         }
 
-        closeBtn.onclick = function() { modal.style.display = "none"; }
-        cancelBtn.onclick = function() { modal.style.display = "none"; }
+        closeBtn.onclick = function() { closeContactModal(); }
+        cancelBtn.onclick = function() { closeContactModal(); }
         window.onclick = function(event) {
-            if (event.target == modal) { modal.style.display = "none"; }
+            if (event.target == modal) { closeContactModal(); }
         }
 
         document.getElementById("contactForm").addEventListener('submit', function(event) {

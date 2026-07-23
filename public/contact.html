@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact The Hulk Caesar Show</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%; }
+    body {
+      font-family: 'Special Elite', monospace;
+      background:
+        radial-gradient(circle at top, rgba(255,235,59,0.12), transparent 35%),
+        linear-gradient(180deg, #e52b20 0%, #c91f17 100%);
+      color: #111;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .wrap {
+      width: min(760px, 100%);
+      background: #f5f1e8;
+      border: 6px solid #111;
+      box-shadow: 12px 12px 0 #000;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-family: 'Permanent Marker', cursive;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 0.95;
+      text-transform: uppercase;
+      color: #111;
+      text-shadow: 3px 3px 0 #ffeb3b;
+    }
+    p {
+      margin: 0 0 20px;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    form { display: grid; gap: 14px; }
+    input, textarea {
+      width: 100%;
+      border: 3px solid #111;
+      padding: 14px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea { min-height: 160px; resize: vertical; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-block;
+      border: 3px solid #111;
+      box-shadow: 4px 4px 0 #000;
+      padding: 12px 18px;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .btn:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+    .primary { background: #0050ff; color: #fff; }
+    .secondary { background: #ffeb3b; color: #111; }
+    .footer {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    .message {
+      display: none;
+      margin: 14px 0 0;
+      padding: 12px;
+      background: #111;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Contact Us / Booking</h1>
+    <p>Send a booking note, a guest request, or a quick message. This page goes straight to the contact form for QR scans.</p>
+
+    <form id="contactForm">
+      <input type="text" id="name" placeholder="Your Name" required>
+      <input type="email" id="email" placeholder="Your Email" required>
+      <textarea id="message" placeholder="Your Message" required></textarea>
+      <div class="actions">
+        <button class="btn primary" type="submit">Send Message</button>
+        <a class="btn secondary" href="/hulk-home.html">Back to Home</a>
+      </div>
+      <div id="status" class="message" role="status" aria-live="polite"></div>
+    </form>
+
+    <div class="footer">Email: hulk@hulkshow.com</div>
+  </main>
+
+  <script>
+    var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xlgwwbld';
+    var form = document.getElementById('contactForm');
+    var statusBox = document.getElementById('status');
+
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      var submitBtn = form.querySelector('button[type="submit"]');
+      var data = new FormData();
+      data.append('name', document.getElementById('name').value);
+      data.append('email', document.getElementById('email').value);
+      data.append('message', document.getElementById('message').value);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      statusBox.style.display = 'none';
+
+      fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      }).then(function(response) {
+        if (!response.ok) {
+          return response.json().then(function(errData) { throw errData; });
+        }
+
+        form.reset();
+        statusBox.textContent = 'Message sent. Thank you!';
+        statusBox.style.display = 'block';
+      }).catch(function() {
+        window.location.href = 'mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=' + encodeURIComponent(
+          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nMessage: ' + document.getElementById('message').value
+        );
+      }).finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
+      });
+    });
+  </script>
+</body>
+</html>
