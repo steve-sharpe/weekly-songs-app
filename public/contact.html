@@ -264,8 +264,12 @@
       var bookingSlots = Array.isArray(slots) && slots.length ? slots : getNextFridaySlots(12);
 
       dateGrid.innerHTML = bookingSlots.map(function(slot) {
-        var featureBooked = Boolean(slot.featureGuestName);
-        var musicalBooked = Boolean(slot.musicalGuestName);
+        var featureBooked = typeof slot.isFeatureBooked === 'boolean'
+          ? slot.isFeatureBooked
+          : Boolean(slot.featureGuestName);
+        var musicalBooked = typeof slot.isMusicalBooked === 'boolean'
+          ? slot.isMusicalBooked
+          : Boolean(slot.musicalGuestName);
 
         return [
           '<article class="date-card" data-date-key="' + escapeHtml(slot.dateKey) + '">',
@@ -278,14 +282,14 @@
           '<input type="checkbox" name="guestSlots" value="' + escapeHtml(slot.dateKey + '|feature') + '"' + (featureBooked ? ' disabled' : '') + '>',
           '<span class="slot-choice__content">',
           '<span class="slot-choice__title">Feature Guest</span>',
-          '<span class="slot-choice__meta">' + (featureBooked ? 'Booked: ' + escapeHtml(slot.featureGuestName) : 'Open') + '</span>',
+          '<span class="slot-choice__meta">' + (featureBooked ? 'Booked' : 'Open') + '</span>',
           '</span>',
           '</label>',
           '<label class="slot-choice' + (musicalBooked ? ' is-booked' : '') + '" data-slot-choice>',
           '<input type="checkbox" name="guestSlots" value="' + escapeHtml(slot.dateKey + '|musical') + '"' + (musicalBooked ? ' disabled' : '') + '>',
           '<span class="slot-choice__content">',
           '<span class="slot-choice__title">Musical Guest</span>',
-          '<span class="slot-choice__meta">' + (musicalBooked ? 'Booked: ' + escapeHtml(slot.musicalGuestName) : 'Open') + '</span>',
+          '<span class="slot-choice__meta">' + (musicalBooked ? 'Booked' : 'Open') + '</span>',
           '</span>',
           '</label>',
           '</div>',
