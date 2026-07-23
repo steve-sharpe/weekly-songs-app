@@ -65,50 +65,90 @@
     }
     .date-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 10px;
+      gap: 12px;
       margin-top: 4px;
     }
-    .date-option {
-      position: relative;
-      display: block;
+    .date-card {
       border: 3px solid #111;
       background: linear-gradient(180deg, #fffdf7, #f0eadb);
       box-shadow: 4px 4px 0 #000;
-      padding: 12px 12px 12px 46px;
-      cursor: pointer;
-      min-height: 76px;
+      padding: 12px;
+    }
+    .date-card__head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .date-card__head strong {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+    .date-card__head span {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .slot-choice {
+      position: relative;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border: 3px solid #111;
+      background: #fff;
+      padding: 10px 12px;
       transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
     }
-    .date-option:hover {
+    .slot-choice:hover {
       transform: translate(2px, 2px);
       box-shadow: 2px 2px 0 #000;
       background: #ffeb3b;
     }
-    .date-option input {
-      position: absolute;
-      inset: 0 auto auto 0;
-      width: 24px;
-      height: 24px;
+    .slot-choice input {
+      width: 22px;
+      height: 22px;
       margin: 0;
       accent-color: #0050ff;
+      flex: 0 0 auto;
+      margin-top: 2px;
     }
-    .date-option strong {
+    .slot-choice__content {
+      flex: 1;
+    }
+    .slot-choice__title {
       display: block;
       font-family: 'Permanent Marker', cursive;
-      font-size: 1.08rem;
+      font-size: 1.02rem;
       line-height: 1.1;
       text-transform: uppercase;
     }
-    .date-option span {
+    .slot-choice__meta {
       display: block;
       margin-top: 4px;
       font-size: 0.88rem;
       line-height: 1.35;
     }
-    .date-option.is-selected {
+    .slot-choice.is-selected {
       background: #ffeb3b;
-      box-shadow: 2px 2px 0 #000;
+    }
+    .slot-choice.is-booked {
+      opacity: 0.45;
+      background: #ddd;
+      cursor: not-allowed;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .slot-choice.is-booked:hover {
+      transform: none;
+      background: #ddd;
+      box-shadow: 4px 4px 0 #000;
     }
     .actions { display: flex; gap: 12px; flex-wrap: wrap; }
     .btn {
@@ -142,15 +182,15 @@
 </head>
 <body>
   <main class="wrap">
-    <h1>Contact Us / Booking</h1>
-    <p>Send a guest request, choose one or more Friday 7:30 PM slots, or leave a quick message. This page goes straight to the booking form for QR scans.</p>
+    <h1>Guest Slot Request</h1>
+    <p>Pick one or more open Friday 7:30 PM slots. Each Friday has a Feature Guest slot and a Musical Guest slot, and booked slots are blocked off automatically.</p>
 
     <form id="contactForm">
       <input type="text" id="name" placeholder="Your Name" required>
       <input type="email" id="email" placeholder="Your Email" required>
       <div>
-        <div class="section-label">Preferred Friday Slots</div>
-        <p class="calendar-help">Pick as many Fridays at 7:30 PM as work for you. We’ll see the notes in your request.</p>
+        <div class="section-label">Friday Calendar</div>
+        <p class="calendar-help">Choose any open Feature Guest or Musical Guest slots you want to request.</p>
         <div id="dateGrid" class="date-grid" aria-label="Preferred Friday dates"></div>
       </div>
       <textarea id="message" placeholder="Your Message" required></textarea>
@@ -170,6 +210,22 @@
     var statusBox = document.getElementById('status');
     var dateGrid = document.getElementById('dateGrid');
 
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getLocalDateKey(date) {
+      var year = date.getFullYear();
+      var month = String(date.getMonth() + 1).padStart(2, '0');
+      var day = String(date.getDate()).padStart(2, '0');
+      return [year, month, day].join('-');
+    }
+
     function getNextFridaySlots(count) {
       var slots = [];
       var current = new Date();
@@ -182,45 +238,64 @@
         daysUntilFriday = 7;
       }
 
-      current.setHours(0, 0, 0, 0);
+      current.setHours(targetHour, targetMinute, 0, 0);
       current.setDate(current.getDate() + daysUntilFriday);
 
       for (var index = 0; index < count; index += 1) {
         var slotDate = new Date(current);
         slotDate.setDate(current.getDate() + (index * 7));
-        slotDate.setHours(targetHour, targetMinute, 0, 0);
-        slots.push(slotDate);
+        slots.push({
+          dateKey: getLocalDateKey(slotDate),
+          dateLabel: slotDate.toLocaleDateString(undefined, {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          featureGuestName: '',
+          musicalGuestName: '',
+        });
       }
 
       return slots;
     }
 
-    function formatSlotLabel(date) {
-      return date.toLocaleDateString(undefined, {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    }
+    function renderGuestBookingSlots(slots) {
+      var bookingSlots = Array.isArray(slots) && slots.length ? slots : getNextFridaySlots(12);
 
-    function renderFridaySlots() {
-      var slots = getNextFridaySlots(12);
+      dateGrid.innerHTML = bookingSlots.map(function(slot) {
+        var featureBooked = Boolean(slot.featureGuestName);
+        var musicalBooked = Boolean(slot.musicalGuestName);
 
-      dateGrid.innerHTML = slots.map(function(date, index) {
-        var value = date.toISOString();
         return [
-          '<label class="date-option" data-date-option>',
-          '<input type="checkbox" name="preferredDates" value="' + value + '" id="slot-' + index + '">',
-          '<strong>' + formatSlotLabel(date) + '</strong>',
-          '<span>7:30 PM guest slot</span>',
-          '</label>'
+          '<article class="date-card" data-date-key="' + escapeHtml(slot.dateKey) + '">',
+          '<div class="date-card__head">',
+          '<strong>' + escapeHtml(slot.dateLabel) + '</strong>',
+          '<span>7:30 PM</span>',
+          '</div>',
+          '<div class="slot-grid">',
+          '<label class="slot-choice' + (featureBooked ? ' is-booked' : '') + '" data-slot-choice>',
+          '<input type="checkbox" name="guestSlots" value="' + escapeHtml(slot.dateKey + '|feature') + '"' + (featureBooked ? ' disabled' : '') + '>',
+          '<span class="slot-choice__content">',
+          '<span class="slot-choice__title">Feature Guest</span>',
+          '<span class="slot-choice__meta">' + (featureBooked ? 'Booked: ' + escapeHtml(slot.featureGuestName) : 'Open') + '</span>',
+          '</span>',
+          '</label>',
+          '<label class="slot-choice' + (musicalBooked ? ' is-booked' : '') + '" data-slot-choice>',
+          '<input type="checkbox" name="guestSlots" value="' + escapeHtml(slot.dateKey + '|musical') + '"' + (musicalBooked ? ' disabled' : '') + '>',
+          '<span class="slot-choice__content">',
+          '<span class="slot-choice__title">Musical Guest</span>',
+          '<span class="slot-choice__meta">' + (musicalBooked ? 'Booked: ' + escapeHtml(slot.musicalGuestName) : 'Open') + '</span>',
+          '</span>',
+          '</label>',
+          '</div>',
+          '</article>'
         ].join('');
       }).join('');
 
       dateGrid.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
         checkbox.addEventListener('change', function() {
-          var parent = checkbox.closest('.date-option');
+          var parent = checkbox.closest('.slot-choice');
           if (parent) {
             parent.classList.toggle('is-selected', checkbox.checked);
           }
@@ -228,18 +303,44 @@
       });
     }
 
-    renderFridaySlots();
+    function loadGuestBookingSlots() {
+      fetch('/api/guest-bookings')
+        .then(function(response) {
+          return response.json().then(function(data) {
+            if (!response.ok) {
+              throw new Error(data?.error || 'Unable to load guest booking slots.');
+            }
+
+            return data;
+          });
+        })
+        .then(function(data) {
+          renderGuestBookingSlots(data.guestBookingSlots || []);
+        })
+        .catch(function(error) {
+          console.error('Guest booking load error:', error);
+          renderGuestBookingSlots(getNextFridaySlots(12));
+          statusBox.textContent = 'Could not load booked slots right now, so open Fridays are shown only.';
+          statusBox.style.display = 'block';
+        });
+    }
+    loadGuestBookingSlots();
 
     form.addEventListener('submit', function(event) {
       event.preventDefault();
 
       var submitBtn = form.querySelector('button[type="submit"]');
-      var selectedDates = Array.from(form.querySelectorAll('input[name="preferredDates"]:checked')).map(function(input) {
-        return input.value;
+      var selectedSlots = Array.from(form.querySelectorAll('input[name="guestSlots"]:checked')).map(function(input) {
+        return {
+          value: input.value,
+          label: input.value
+            .replace('|feature', ' — Feature Guest')
+            .replace('|musical', ' — Musical Guest'),
+        };
       });
 
-      if (!selectedDates.length) {
-        statusBox.textContent = 'Please select at least one Friday 7:30 PM slot.';
+      if (!selectedSlots.length) {
+        statusBox.textContent = 'Please select at least one open Friday slot.';
         statusBox.style.display = 'block';
         return;
       }
@@ -248,8 +349,8 @@
       data.append('name', document.getElementById('name').value);
       data.append('email', document.getElementById('email').value);
       data.append('message', document.getElementById('message').value);
-      data.append('preferred_dates', selectedDates.join('\n'));
-      data.append('preferred_dates_count', String(selectedDates.length));
+      data.append('requested_slots', selectedSlots.map(function(slot) { return slot.label; }).join('\n'));
+      data.append('requested_slots_count', String(selectedSlots.length));
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
@@ -265,14 +366,14 @@
         }
 
         form.reset();
-        dateGrid.querySelectorAll('.date-option').forEach(function(option) {
+        dateGrid.querySelectorAll('.slot-choice').forEach(function(option) {
           option.classList.remove('is-selected');
         });
         statusBox.textContent = 'Message sent. Thank you!';
         statusBox.style.display = 'block';
       }).catch(function() {
         window.location.href = 'mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=' + encodeURIComponent(
-          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nPreferred dates: ' + (selectedDates.length ? selectedDates.join(', ') : 'None selected') + '\nMessage: ' + document.getElementById('message').value
+          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nRequested slots: ' + (selectedSlots.length ? selectedSlots.map(function(slot) { return slot.label; }).join(', ') : 'None selected') + '\nMessage: ' + document.getElementById('message').value
         );
       }).finally(function() {
         submitBtn.disabled = false;
