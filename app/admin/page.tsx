@@ -15,13 +15,6 @@ type AdminTrack = {
   featured_count: number;
 };
 
-type GuestBookingSlot = {
-  dateKey: string;
-  dateLabel: string;
-  featureGuestName: string;
-  musicalGuestName: string;
-};
-
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1200;
 
@@ -94,11 +87,9 @@ async function compressImageFile(file: File): Promise<string> {
 export default function AdminTracksPage() {
   const [adminSecret, setAdminSecret] = useState("");
   const [tickerText, setTickerText] = useState("");
-  const [guestBookingSlots, setGuestBookingSlots] = useState<GuestBookingSlot[]>([]);
   const [tracks, setTracks] = useState<AdminTrack[]>([]);
   const [loading, setLoading] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
-  const [savingGuestBookingSlots, setSavingGuestBookingSlots] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Record<number, { photoUrl: string }>>({});
@@ -106,10 +97,82 @@ export default function AdminTracksPage() {
   const [nextWeekTrackIds, setNextWeekTrackIds] = useState<number[]>([]);
   const [savingNextWeek, setSavingNextWeek] = useState(false);
 
+  async function loadTracksForSecret(secretInput: string) {
+    const secret = secretInput.trim();
+
+    if (!secret) {
+      throw new Error("Enter admin secret first.");
+    }
+
+    window.localStorage.setItem("admin_secret", secret);
+
+    const response = await fetch("/api/admin/tracks", {
+      headers: {
+        "x-admin-secret": secret,
+      },
+    });
+
+    const body = (await response.json()) as { tracks?: AdminTrack[]; error?: string };
+    if (!response.ok) {
+      throw new Error(body.error || "Failed to load tracks.");
+    }
+
+    const loadedTracks = body.tracks ?? [];
+    setTracks(loadedTracks);
+
+    const settingsResponse = await fetch("/api/admin/settings", {
+      headers: {
+        "x-admin-secret": secret,
+      },
+    });
+
+    const settingsBody = (await settingsResponse.json()) as { tickerText?: string; error?: string };
+
+    if (settingsResponse.ok) {
+      setTickerText(settingsBody.tickerText ?? "");
+    }
+
+    const nextWeekResponse = await fetch("/api/admin/weekly/next", {
+      headers: {
+        "x-admin-secret": secret,
+      },
+    });
+
+    const nextWeekBody = (await nextWeekResponse.json()) as {
+      weekStart?: string;
+      selectedTrackIds?: number[];
+    };
+
+    if (nextWeekResponse.ok) {
+      setNextWeekStart(nextWeekBody.weekStart ?? "");
+      setNextWeekTrackIds(nextWeekBody.selectedTrackIds ?? []);
+    }
+
+    const initialEditing: Record<number, { photoUrl: string }> = {};
+    for (const track of loadedTracks) {
+      initialEditing[track.id] = { photoUrl: track.photo_url ?? "" };
+    }
+    setEditing(initialEditing);
+    setMessage(`Loaded ${loadedTracks.length} tracks.`);
+  }
+
   useEffect(() => {
     const saved = window.localStorage.getItem("admin_secret");
     if (saved) {
-      setAdminSecret(saved);
+      const normalizedSaved = saved.trim();
+      setAdminSecret(normalizedSaved);
+
+      if (normalizedSaved) {
+        setLoading(true);
+        setMessage("");
+        loadTracksForSecret(normalizedSaved)
+          .catch((error) => {
+            setMessage(error instanceof Error ? error.message : "Unknown error");
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
     }
   }, []);
 
@@ -132,65 +195,7 @@ export default function AdminTracksPage() {
     setMessage("");
 
     try {
-      if (!adminSecret.trim()) {
-        throw new Error("Enter admin secret first.");
-      }
-
-      window.localStorage.setItem("admin_secret", adminSecret.trim());
-
-      const response = await fetch("/api/admin/tracks", {
-        headers: {
-          "x-admin-secret": adminSecret.trim(),
-        },
-      });
-
-      const body = (await response.json()) as { tracks?: AdminTrack[]; error?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "Failed to load tracks.");
-      }
-
-      const loadedTracks = body.tracks ?? [];
-      setTracks(loadedTracks);
-
-      const settingsResponse = await fetch("/api/admin/settings", {
-        headers: {
-          "x-admin-secret": adminSecret.trim(),
-        },
-      });
-
-      const settingsBody = (await settingsResponse.json()) as {
-        tickerText?: string;
-        guestBookingSlots?: GuestBookingSlot[];
-        error?: string;
-      };
-
-      if (settingsResponse.ok) {
-        setTickerText(settingsBody.tickerText ?? "");
-        setGuestBookingSlots(settingsBody.guestBookingSlots ?? []);
-      }
-
-      const nextWeekResponse = await fetch("/api/admin/weekly/next", {
-        headers: {
-          "x-admin-secret": adminSecret.trim(),
-        },
-      });
-
-      const nextWeekBody = (await nextWeekResponse.json()) as {
-        weekStart?: string;
-        selectedTrackIds?: number[];
-      };
-
-      if (nextWeekResponse.ok) {
-        setNextWeekStart(nextWeekBody.weekStart ?? "");
-        setNextWeekTrackIds(nextWeekBody.selectedTrackIds ?? []);
-      }
-
-      const initialEditing: Record<number, { photoUrl: string }> = {};
-      for (const track of loadedTracks) {
-        initialEditing[track.id] = { photoUrl: track.photo_url ?? "" };
-      }
-      setEditing(initialEditing);
-      setMessage(`Loaded ${loadedTracks.length} tracks.`);
+      await loadTracksForSecret(adminSecret);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unknown error");
     } finally {
@@ -359,70 +364,6 @@ export default function AdminTracksPage() {
     }
   }
 
-  function updateGuestBookingSlot(index: number, patch: Partial<GuestBookingSlot>) {
-    setGuestBookingSlots((prev) => {
-      const next = [...prev];
-      const current = next[index];
-
-      if (!current) {
-        return prev;
-      }
-
-      next[index] = {
-        ...current,
-        ...patch,
-      };
-
-      return next;
-    });
-  }
-
-  function clearGuestBookingSlot(index: number) {
-    updateGuestBookingSlot(index, {
-      featureGuestName: "",
-      musicalGuestName: "",
-    });
-  }
-
-  async function saveGuestBookingSlots() {
-    setMessage("");
-    setSavingGuestBookingSlots(true);
-
-    try {
-      if (!adminSecret.trim()) {
-        throw new Error("Enter admin secret first.");
-      }
-
-      const response = await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": adminSecret.trim(),
-        },
-        body: JSON.stringify({
-          guestBookingSlots,
-        }),
-      });
-
-      const body = (await response.json()) as {
-        ok?: boolean;
-        guestBookingSlots?: GuestBookingSlot[];
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(body.error || "Failed to save guest booking slots.");
-      }
-
-      setGuestBookingSlots(body.guestBookingSlots ?? guestBookingSlots);
-      setMessage("Guest booking slots saved.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unknown error");
-    } finally {
-      setSavingGuestBookingSlots(false);
-    }
-  }
-
   async function bootstrapProduction() {
     setMessage("");
     setBootstrapping(true);
@@ -549,6 +490,9 @@ export default function AdminTracksPage() {
             <a href="/admin/adventure" className="admin-btn ml-2 inline-block">
               Open Adventure Game Designer
             </a>
+            <a href="/admin/contact" className="admin-btn ml-2 inline-block">
+              Open Contact Form Admin
+            </a>
             <a href="/game/adventure" className="admin-btn ml-2 inline-block">
               Open Adventure Game
             </a>
@@ -597,71 +541,6 @@ export default function AdminTracksPage() {
               <div />
               <button type="button" className="admin-btn" onClick={saveTickerText}>
                 Save Scroll Text
-              </button>
-            </div>
-          </article>
-
-          <article className="admin-card mt-6">
-            <h2 className="track-title">Guest Booking Calendar</h2>
-            <p className="track-meta">
-              Fill in a Feature Guest or Musical Guest name to block that slot off on the public request page.
-            </p>
-            <div className="mt-4 grid gap-3">
-              {guestBookingSlots.map((slot, index) => (
-                <section key={slot.dateKey} className="rounded border-2 border-black bg-white p-3 shadow-[4px_4px_0_#000]">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="track-title text-xl">{slot.dateLabel}</p>
-                      <p className="track-meta">Friday 7:30 PM</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="admin-btn"
-                      onClick={() => clearGuestBookingSlot(index)}
-                    >
-                      Clear Slot
-                    </button>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                    <label className="grid gap-1">
-                      <span className="track-meta font-black uppercase">Feature Guest</span>
-                      <input
-                        type="text"
-                        value={slot.featureGuestName}
-                        onChange={(event) =>
-                          updateGuestBookingSlot(index, { featureGuestName: event.target.value })
-                        }
-                        placeholder="Guest name or leave blank"
-                        className="admin-input"
-                      />
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="track-meta font-black uppercase">Musical Guest</span>
-                      <input
-                        type="text"
-                        value={slot.musicalGuestName}
-                        onChange={(event) =>
-                          updateGuestBookingSlot(index, { musicalGuestName: event.target.value })
-                        }
-                        placeholder="Guest name or leave blank"
-                        className="admin-input"
-                      />
-                    </label>
-                  </div>
-                </section>
-              ))}
-            </div>
-
-            <div className="admin-row mt-4">
-              <div />
-              <button
-                type="button"
-                className="admin-btn"
-                onClick={saveGuestBookingSlots}
-                disabled={savingGuestBookingSlots}
-              >
-                {savingGuestBookingSlots ? "Saving..." : "Save Guest Calendar"}
               </button>
             </div>
           </article>
