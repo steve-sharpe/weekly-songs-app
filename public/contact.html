@@ -188,6 +188,7 @@
     <form id="contactForm">
       <input type="text" id="name" placeholder="Your Name" required>
       <input type="email" id="email" placeholder="Your Email" required>
+      <input type="text" id="chatTopic" placeholder="What would you like to chat about?" required>
       <div>
         <div class="section-label">Friday Calendar</div>
         <p class="calendar-help">Choose any open Feature Guest or Musical Guest slots you want to request.</p>
@@ -352,6 +353,7 @@
       var data = new FormData();
       data.append('name', document.getElementById('name').value);
       data.append('email', document.getElementById('email').value);
+      data.append('chat_topic', document.getElementById('chatTopic').value);
       data.append('message', document.getElementById('message').value);
       data.append('requested_slots', selectedSlots.map(function(slot) { return slot.label; }).join('\n'));
       data.append('requested_slots_count', String(selectedSlots.length));
@@ -377,7 +379,7 @@
         statusBox.style.display = 'block';
       }).catch(function() {
         window.location.href = 'mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=' + encodeURIComponent(
-          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nRequested slots: ' + (selectedSlots.length ? selectedSlots.map(function(slot) { return slot.label; }).join(', ') : 'None selected') + '\nMessage: ' + document.getElementById('message').value
+          'Name: ' + document.getElementById('name').value + '\nEmail: ' + document.getElementById('email').value + '\nWhat would you like to chat about?: ' + document.getElementById('chatTopic').value + '\nRequested slots: ' + (selectedSlots.length ? selectedSlots.map(function(slot) { return slot.label; }).join(', ') : 'None selected') + '\nMessage: ' + document.getElementById('message').value
         );
       }).finally(function() {
         submitBtn.disabled = false;

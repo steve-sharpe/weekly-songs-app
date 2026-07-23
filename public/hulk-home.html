@@ -715,6 +715,9 @@
                             <input type="email" id="email" placeholder="Your Email" required>
                         </div>
                         <div class="form-row">
+                            <input type="text" id="chatTopic" placeholder="What would you like to chat about?" required>
+                        </div>
+                        <div class="form-row">
                             <textarea id="message" rows="4" placeholder="Your Message" required></textarea>
                         </div>
                         <div style="text-align: right; display: flex; flex-direction: column; gap: 10px;">
@@ -948,6 +951,7 @@
             event.preventDefault();
             var name = document.getElementById("name").value;
             var email = document.getElementById("email").value;
+            var chatTopic = document.getElementById("chatTopic").value;
             var message = document.getElementById("message").value;
             var form = this;
             var submitBtn = form.querySelector('.submit-btn');
@@ -958,6 +962,7 @@
             var data = new FormData();
             data.append('name', name);
             data.append('email', email);
+            data.append('chat_topic', chatTopic);
             data.append('message', message);
 
             fetch(FORMSPREE_ENDPOINT, {
@@ -975,7 +980,7 @@
             }).catch(function(error) {
                 console.error('Send error:', error);
                 alert('Could not send message automatically. Opening email client as fallback.');
-                window.location.href = "mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=" + encodeURIComponent("Name: " + name + "\nEmail: " + email + "\nMessage: " + message);
+                window.location.href = "mailto:hulk@hulkshow.com?subject=Contact%20Form%20Submission&body=" + encodeURIComponent("Name: " + name + "\nEmail: " + email + "\nWhat would you like to chat about?: " + chatTopic + "\nMessage: " + message);
             }).finally(function() {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'SEND MESSAGE';
