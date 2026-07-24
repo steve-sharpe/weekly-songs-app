@@ -207,6 +207,7 @@
 
   <script>
     var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xlgwwbld';
+    var BOOKING_WEEKS = 16;
     var form = document.getElementById('contactForm');
     var statusBox = document.getElementById('status');
     var dateGrid = document.getElementById('dateGrid');
@@ -227,7 +228,7 @@
       return [year, month, day].join('-');
     }
 
-    function getNextFridaySlots(count) {
+    function getNextFridaySlots() {
       var slots = [];
       var current = new Date();
       var targetHour = 19;
@@ -242,9 +243,8 @@
       current.setHours(targetHour, targetMinute, 0, 0);
       current.setDate(current.getDate() + daysUntilFriday);
 
-      for (var index = 0; index < count; index += 1) {
+      for (var week = 0; week < BOOKING_WEEKS; week += 1) {
         var slotDate = new Date(current);
-        slotDate.setDate(current.getDate() + (index * 7));
         slots.push({
           dateKey: getLocalDateKey(slotDate),
           dateLabel: slotDate.toLocaleDateString(undefined, {
@@ -256,13 +256,15 @@
           featureGuestName: '',
           musicalGuestName: '',
         });
+
+        current.setDate(current.getDate() + 7);
       }
 
       return slots;
     }
 
     function renderGuestBookingSlots(slots) {
-      var bookingSlots = Array.isArray(slots) && slots.length ? slots : getNextFridaySlots(12);
+      var bookingSlots = Array.isArray(slots) && slots.length ? slots : getNextFridaySlots();
 
       dateGrid.innerHTML = bookingSlots.map(function(slot) {
         var featureBooked = typeof slot.isFeatureBooked === 'boolean'
@@ -324,7 +326,7 @@
         })
         .catch(function(error) {
           console.error('Guest booking load error:', error);
-          renderGuestBookingSlots(getNextFridaySlots(12));
+          renderGuestBookingSlots(getNextFridaySlots());
           statusBox.textContent = 'Could not load booked slots right now, so open Fridays are shown only.';
           statusBox.style.display = 'block';
         });

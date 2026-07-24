@@ -3,7 +3,7 @@ import { ensureSchema, getSql } from "@/lib/db";
 const DEFAULT_TICKER_TEXT =
   "NEW WEEKLY PLAYLIST • 4 RANDOM TRACKS • NO REPEATS UNTIL EVERY SONG PLAYS • POWERED BY GOOGLE DRIVE •";
 const GUEST_BOOKING_SLOTS_KEY = "guest_booking_slots";
-const DEFAULT_GUEST_BOOKING_WINDOW = 12;
+const GUEST_BOOKING_WEEKS = 16;
 
 export type GuestBookingSlot = {
   dateKey: string;
@@ -54,20 +54,21 @@ function getNextFridayAtSevenThirty(baseDate = new Date()): Date {
   return current;
 }
 
-function buildUpcomingGuestBookingSlots(count = DEFAULT_GUEST_BOOKING_WINDOW): GuestBookingSlot[] {
+function buildUpcomingGuestBookingSlots(): GuestBookingSlot[] {
   const slots: GuestBookingSlot[] = [];
-  const start = getNextFridayAtSevenThirty();
+  const slotDate = getNextFridayAtSevenThirty();
 
-  for (let index = 0; index < count; index += 1) {
-    const slotDate = new Date(start);
-    slotDate.setDate(start.getDate() + index * 7);
+  for (let week = 0; week < GUEST_BOOKING_WEEKS; week += 1) {
+    const currentSlot = new Date(slotDate);
 
     slots.push({
-      dateKey: formatDateKey(slotDate),
-      dateLabel: formatDateLabel(slotDate),
+      dateKey: formatDateKey(currentSlot),
+      dateLabel: formatDateLabel(currentSlot),
       featureGuestName: "",
       musicalGuestName: "",
     });
+
+    slotDate.setDate(slotDate.getDate() + 7);
   }
 
   return slots;
